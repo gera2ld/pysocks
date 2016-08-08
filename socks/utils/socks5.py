@@ -12,7 +12,7 @@ class SOCKS5MixIn:
     def pack_address(self, address = None):
         if address is None:
             address = '0.0.0.0', 0
-        host, port = address
+        host, port = address[:2]
         # IPv6
         if ':' in host:
             host_parts = host.split(':')

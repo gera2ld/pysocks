@@ -59,7 +59,7 @@ class BaseHandler:
         5: SOCKS5Client,
     }
     async def get_connector(self):
-        proxy = config.get_proxy()
+        proxy = config.get_proxy(self.addr)
         if proxy is None:
             loop = asyncio.get_event_loop()
             return await loop.create_connection(lambda : SOCKSConnect(self.writer), *self.addr)

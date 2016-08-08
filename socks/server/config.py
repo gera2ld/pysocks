@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
-import random
+import inspect
 from .logger import logger
+from .proxy import ProxyResult, ProxyPicker, RandomPicker
 
 class InvalidProxy(Exception): pass
 
@@ -40,6 +41,8 @@ class Config:
         self.host = '127.0.0.1'
         self.port = 1080
         self.set_proxies()
+        self.proxy_pickers = []
+        self.add_picker(RandomPicker)
 
     def set_user(self, user, pwd=None):
         if pwd is None:
@@ -69,7 +72,18 @@ class Config:
                 proxies_set.add(proxy)
         self.proxies = list(proxies_set)
 
-    def get_proxy(self):
-        return random.choice(self.proxies)
+    def add_picker(self, picker=None):
+        if inspect.isclass(picker) and issubclass(picker, ProxyPicker):
+            ins = picker()
+        elif isinstance(picker, ProxyPicker):
+            ins = picker
+        else:
+            logger.warn('Invalid proxy picker: %s', picker)
+            return
+        self.proxy_pickers.append(ins)
+        self.proxy_pickers.sort(key=lambda picker: picker.priority, reverse=True)
+
+    def get_proxy(self, addr):
+        return ProxyResult.get(self.proxies, self.proxy_pickers, addr)
 
 config = Config()

@@ -2,6 +2,7 @@
 # coding=utf-8
 import argparse, logging
 from . import serve, logger, config
+from .proxy import SkipPicker
 
 logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
@@ -25,8 +26,12 @@ if args.auth is not None:
         config.set_user(user, pwd)
 if args.versions is not None:
     config.versions = set(args.versions)
-# config.set_proxies([
-#     ('127.0.0.1', 1080, 5, None, None, True),
-# ])
+config.set_proxies([
+    ('127.0.0.1', 1080, 5, None, None, True),
+])
+config.add_picker(SkipPicker((
+    '127.0.0.1',
+    'localhost',
+)))
 
 serve()
