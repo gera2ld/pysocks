@@ -3,20 +3,20 @@
 import struct, asyncio, socket
 from .base import BaseHandler
 from ..utils import SOCKS5MixIn
-from . import config, logger
+from . import logger
 
 class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
     '''
     SOCKS5 Handler
     '''
 
-    async def reply_address(self, address=None):
-        return self.pack_address(address)
+    def reply_address(self, address=None):
+        self.writer.write(self.pack_address(address))
 
     async def handle_socks(self):
         length, = struct.unpack('B', (await self.reader.readexactly(1)))
         for method in struct.unpack('B' * length, (await self.reader.readexactly(length))):
-            if method in config.socks5methods:
+            if method in self.config.socks5methods:
                 self.method = method
                 break
         else:
@@ -31,7 +31,7 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
             user = await self.reader.readexactly(length)
             length, = struct.unpack('B', (await self.reader.readexactly(1)))
             pwd = await self.reader.readexactly(length)
-            code = 0 if config.authenticate(user, pwd) else 1
+            code = 0 if self.config.authenticate(user, pwd) else 1
             self.writer.write(struct.pack('BB', 1, code))
             if code > 0:
                 logger.debug('Invalid user or password.')
@@ -62,6 +62,6 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
                 logger.debug(type(e))
                 import traceback
                 traceback.print_exc()
-                await self.reply(self.code_rejected)
+                self.reply(self.code_rejected)
         else:
-            await self.reply(self.code_not_supported)
+            self.reply(self.code_not_supported)

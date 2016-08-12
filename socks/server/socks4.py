@@ -18,9 +18,9 @@ class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
             buf.write(byte)
         return buf.getvalue()
 
-    async def reply_address(self, address = None):
+    def reply_address(self, address = None):
         # address should always be IPv4
-        return self.pack_address(address)
+        self.writer.write(self.pack_address(address))
 
     async def handle_socks(self):
         command, port = struct.unpack('!BH', (await self.reader.readexactly(3)))
@@ -43,6 +43,6 @@ class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
                 await handle()
             except:
                 # TODO net error
-                await self.reply(self.code_rejected)
+                self.reply(self.code_rejected)
         else:
-            await self.reply(self.code_not_supported)
+            self.reply(self.code_not_supported)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import argparse, logging
-from . import serve, logger, config
+from . import serve, logger, Config
 from .proxy import SkipPicker
 
 logger.setLevel(logging.INFO)
@@ -17,6 +17,7 @@ parser.add_argument('-p', '--port', default=1080, help='the port of SOCKS server
 parser.add_argument('-a', '--auth', nargs=2, action='append', help='username and password pairs')
 parser.add_argument('--versions', nargs='+', help='allowed versions, e.g 4 5')
 
+config = Config()
 args = parser.parse_args()
 if args.host is not None:
     config.host = args.host
@@ -34,4 +35,4 @@ config.add_picker(SkipPicker((
     'localhost',
 )))
 
-serve()
+serve(config)

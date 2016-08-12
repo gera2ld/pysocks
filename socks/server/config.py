@@ -34,12 +34,12 @@ class Proxy:
 class Config:
     bufsize = 4096
 
-    def __init__(self):
+    def __init__(self, host='127.0.0.1', port=1080):
         self.users = {}
         self.versions = {5}
         self.socks5methods = 0,
-        self.host = '127.0.0.1'
-        self.port = 1080
+        self.host = host
+        self.port = port
         self.set_proxies()
         self.proxy_pickers = []
         self.add_picker(RandomPicker)
@@ -85,5 +85,3 @@ class Config:
 
     def get_proxy(self, addr):
         return ProxyResult.get(self.proxies, self.proxy_pickers, addr)
-
-config = Config()

@@ -15,27 +15,7 @@ class SOCKS5MixIn:
         host, port = address[:2]
         # IPv6
         if ':' in host:
-            host_parts = host.split(':')
-            # IPv6 nested IPv4
-            if not host_parts[0]:
-                host_parts.pop(0)
-            if not host_parts[-1]:
-                host_parts.pop()
-            elif '.' in host_parts[-1]:
-                ip = host_parts.pop()
-                host_parts.append(ip[0] * 256 + ip[1])
-                host_parts.append(ip[2] * 256 + ip[3])
-            length = len(host_parts)
-            parts = []
-            for part in host_parts:
-                if isinstance(part, int):
-                    parts.append(part)
-                elif part:
-                    parts.append(int(part, 16))
-                else:
-                    parts.extend([0] * (9 - length))
-            parts.append(port)
-            return struct.pack('!BB8HH', 0, 4, *parts)
+            return struct.pack('!BB16sH', 0, 4, socket.inet_pton(socket.AF_INET6, host), port)
         # IPv4
         try:
             # IP address
