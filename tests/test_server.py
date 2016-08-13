@@ -60,6 +60,7 @@ class TestBootstrap(unittest.TestCase):
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.handler.get_class(), SOCKS4Handler)
         self.assertEqual(self.handler.addr, BootstrapAddr)
+        self.assertEqual(writer.getvalue(), b'')
 
     def test_socks5(self):
         reader = asyncio.StreamReader()
@@ -69,6 +70,22 @@ class TestBootstrap(unittest.TestCase):
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.handler.get_class(), SOCKS5Handler)
         self.assertEqual(self.handler.addr, BootstrapAddr)
+        self.assertEqual(writer.getvalue(), b'\5\0')
+
+    def test_socks5auth(self):
+        self.server.config.set_user('hello', 'world')
+        reader = asyncio.StreamReader()
+        reader.feed_data(SOCKS5Bootstrap)
+        writer = io.BytesIO()
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.server.handle(reader, writer))
+        self.assertEqual(getattr(self.handler, 'addr', None), None)
+        self.assertEqual(writer.getvalue(), b'\5\xff')
+        reader = asyncio.StreamReader()
+        reader.feed_data(b'\5\1\2\1\5hello\5world\5\1\0\1\1\2\3\4\0P')
+        writer = io.BytesIO()
+        loop.run_until_complete(self.server.handle(reader, writer))
+        self.assertEqual(writer.getvalue(), b'\5\2\1\0')
 
 class TestConnect(unittest.TestCase):
 

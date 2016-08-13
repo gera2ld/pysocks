@@ -45,6 +45,8 @@ class Config:
         self.add_picker(RandomPicker)
 
     def set_user(self, user, pwd=None):
+        if isinstance(user, str): user = user.encode()
+        if isinstance(pwd, str): pwd = pwd.encode()
         if pwd is None:
             self.users.pop(user, None)
         else:
