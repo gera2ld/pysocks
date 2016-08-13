@@ -59,7 +59,7 @@ class BaseHandler:
         4: SOCKS4Client,
         5: SOCKS5Client,
     }
-    async def get_connector(self):
+    async def get_connection(self):
         proxy = self.config.get_proxy(self.addr)
         if proxy is None:
             loop = asyncio.get_event_loop()
@@ -76,7 +76,7 @@ class BaseHandler:
 
     async def handle_connect(self):
         try:
-            trans_remote, prot_remote = await self.get_connector()
+            trans_remote, prot_remote = await self.get_connection()
         except Exception as e:
             if isinstance(e, OSError):
                 # No route to host
