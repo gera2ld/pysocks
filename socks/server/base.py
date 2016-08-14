@@ -25,11 +25,7 @@ class BaseHandler:
     `code_granted`, `code_rejected`, `code_not_supported` must be assigned in subclasses.
     `reply_address` must be implemented in subclasses.
     '''
-    commands = {
-        1: 'connect',
-        2: 'bind',
-        3: 'udp',
-    }
+    commands = {}
 
     def __init__(self, reader, writer, config):
         self.reader = reader
@@ -38,6 +34,17 @@ class BaseHandler:
         # self.socket = writer.transport.get_extra_info('socket')
 
     def reply_address(self, address = None):
+        '''
+        MUST be implemented in sub classes.
+        The address will be packed and sent to self.writer.
+        '''
+        raise NotImplemented
+
+    async def hand_shake(self):
+        '''
+        MUST be implemented in sub classes.
+        Read protocol specific bytes and parse address, command, etc.
+        '''
         raise NotImplemented
 
     def reply(self, code, addr = None):
@@ -74,7 +81,7 @@ class BaseHandler:
         await client.handle_connect(self.addr)
         return client.writer, client.forward(self.writer, self.config.bufsize)
 
-    async def handle_connect(self):
+    async def socks_connect(self):
         try:
             trans_remote, prot_remote = await self.get_connection()
         except Exception as e:
@@ -93,7 +100,7 @@ class BaseHandler:
                 self.addr[0], self.addr[1], self.version,
                 data_len_in, data_len_out)
 
-    async def handle_bind(self):
+    async def socks_bind(self):
         async def on_connect(prot_bind):
             dest_addr = prot_bind.transport.get_extra_info('peername')
             self.reply(self.code_granted, dest_addr)
@@ -109,4 +116,22 @@ class BaseHandler:
         self.reply(self.code_granted, bind_addr)
 
     async def handle(self):
-        await self.handle_socks()
+        command = await self.hand_shake()
+        if command is None:
+            # connection aborted due to authentication failure
+            return
+        name = self.commands.get(command)
+        handle = None
+        if name:
+            handle = getattr(self, 'socks_' + name, None)
+        if handle is not None:
+            try:
+                await handle()
+            except Exception as e:
+                # TODO net error
+                logger.debug(type(e))
+                import traceback
+                traceback.print_exc()
+                self.reply(self.code_rejected)
+        else:
+            self.reply(self.code_not_supported)

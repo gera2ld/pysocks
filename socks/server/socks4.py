@@ -8,6 +8,10 @@ class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
     '''
     SOCKS4 Handler
     '''
+    commands = {
+        1: 'connect',
+        2: 'bind',
+    }
 
     async def read_until_null(self):
         buf = io.BytesIO()
@@ -19,10 +23,10 @@ class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
         return buf.getvalue()
 
     def reply_address(self, address = None):
-        # address should always be IPv4
+        # address must be IPv4
         self.writer.write(self.pack_address(address))
 
-    async def handle_socks(self):
+    async def hand_shake(self):
         command, port = struct.unpack('!BH', (await self.reader.readexactly(3)))
         ip = await self.reader.readexactly(4)
         ipn, = struct.unpack('!I', ip)
@@ -34,15 +38,4 @@ class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
         else:
             host = socket.inet_ntoa(ip)
         self.addr = host, port
-        name = self.commands.get(command)
-        handle = None
-        if name:
-            handle = getattr(self, 'handle_' + name, None)
-        if handle:
-            try:
-                await handle()
-            except:
-                # TODO net error
-                self.reply(self.code_rejected)
-        else:
-            self.reply(self.code_not_supported)
+        return command

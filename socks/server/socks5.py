@@ -9,11 +9,16 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
     '''
     SOCKS5 Handler
     '''
+    commands = {
+        1: 'connect',
+        2: 'bind',
+        3: 'udp',
+    }
 
     def reply_address(self, address=None):
         self.writer.write(self.pack_address(address))
 
-    async def handle_socks(self):
+    async def hand_shake(self):
         length, = struct.unpack('B', (await self.reader.readexactly(1)))
         for method in struct.unpack('B' * length, (await self.reader.readexactly(length))):
             if method in self.config.socks5methods:
@@ -50,18 +55,4 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
             host = socket.inet_ntop(socket.AF_INET6, (await self.reader.readexactly(16)))
         port, = struct.unpack('!H', (await self.reader.readexactly(2)))
         self.addr = host, port
-        name = self.commands.get(command)
-        handle = None
-        if name:
-            handle = getattr(self, 'handle_' + name, None)
-        if handle:
-            try:
-                await handle()
-            except Exception as e:
-                # TODO net error
-                logger.debug(type(e))
-                import traceback
-                traceback.print_exc()
-                self.reply(self.code_rejected)
-        else:
-            self.reply(self.code_not_supported)
+        return command

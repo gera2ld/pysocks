@@ -50,7 +50,7 @@ class TestBootstrap(unittest.TestCase):
 
     def hook_handler(self, handler):
         self.handler = handler
-        handler.handle_connect = asyncio.coroutine(lambda : None)
+        handler.socks_connect = asyncio.coroutine(lambda : None)
 
     def test_socks4(self):
         reader = asyncio.StreamReader()
