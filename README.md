@@ -19,8 +19,9 @@ $ python3 -m socks.server -p 1081
 ```
 or use a python script:
 ``` python
-from socks.server import config, serve
+from socks.server import Config, serve
 
+config = Config()
 config.port = 1081
-serve()
+serve(config)
 ```
