@@ -4,8 +4,8 @@ import unittest, asyncio, io
 from socks.server import SOCKSServer, SOCKS4Handler, SOCKS5Handler
 from socks.server.base import SOCKSConnect, BaseHandler
 
-SOCKS4Bootstrap = b'\4\1\0P\1\2\3\4\0'
-SOCKS5Bootstrap = b'\5\1\0\5\1\0\1\1\2\3\4\0P'
+SOCKS4Connect = b'\4\1\0P\1\2\3\4\0'
+SOCKS5Connect = b'\5\1\0\5\1\0\1\1\2\3\4\0P'
 BootstrapAddr = '1.2.3.4', 80
 TESTDATA = b'Hello world'
 
@@ -54,7 +54,7 @@ class TestBootstrap(unittest.TestCase):
 
     def test_socks4(self):
         reader = asyncio.StreamReader()
-        reader.feed_data(SOCKS4Bootstrap)
+        reader.feed_data(SOCKS4Connect)
         writer = io.BytesIO()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
@@ -64,7 +64,7 @@ class TestBootstrap(unittest.TestCase):
 
     def test_socks5(self):
         reader = asyncio.StreamReader()
-        reader.feed_data(SOCKS5Bootstrap)
+        reader.feed_data(SOCKS5Connect)
         writer = io.BytesIO()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
@@ -75,7 +75,7 @@ class TestBootstrap(unittest.TestCase):
     def test_socks5auth(self):
         self.server.config.set_user('hello', 'world')
         reader = asyncio.StreamReader()
-        reader.feed_data(SOCKS5Bootstrap)
+        reader.feed_data(SOCKS5Connect)
         writer = io.BytesIO()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
@@ -110,7 +110,7 @@ class TestConnect(unittest.TestCase):
 
     def test_socks4(self):
         reader = asyncio.StreamReader()
-        reader.feed_data(SOCKS4Bootstrap)
+        reader.feed_data(SOCKS4Connect)
         reader.feed_data(TESTDATA)
         reader.feed_eof()
         writer = io.BytesIO()
@@ -121,7 +121,7 @@ class TestConnect(unittest.TestCase):
 
     def test_socks5(self):
         reader = asyncio.StreamReader()
-        reader.feed_data(SOCKS5Bootstrap)
+        reader.feed_data(SOCKS5Connect)
         reader.feed_data(TESTDATA)
         reader.feed_eof()
         writer = io.BytesIO()

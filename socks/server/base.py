@@ -26,6 +26,7 @@ class BaseHandler:
     `reply_address` must be implemented in subclasses.
     '''
     commands = {}
+    empty_addr = '0.0.0.0', 0
 
     def __init__(self, reader, writer, config):
         self.reader = reader
@@ -91,6 +92,7 @@ class BaseHandler:
             else:
                 import traceback
                 traceback.print_exc()
+            self.reply(self.code_rejected, self.empty_addr)
             data_len_out = data_len_in = '-'
         else:
             self.reply(self.code_granted, trans_remote.get_extra_info('sockname'))
@@ -100,20 +102,41 @@ class BaseHandler:
                 self.addr[0], self.addr[1], self.version,
                 data_len_in, data_len_out)
 
-    async def socks_bind(self):
-        async def on_connect(prot_bind):
-            dest_addr = prot_bind.transport.get_extra_info('peername')
-            self.reply(self.code_granted, dest_addr)
-            await self.forward_data(prot_bind.transport)
-        def on_bind():
-            prot_bind = SOCKSConnect(self.writer)
-            asyncio.ensure_future(on_connect(prot_bind))
-            server.close()
-            return prot_bind
+    async def get_bind_connection(self, timeout=3):
+        def connection_made(transport):
+            SOCKSConnect.connection_made(prot_bind, transport)
+            bind_server.close()
+            future.set_result((transport, prot_bind))
+        future = asyncio.Future()
+        prot_bind = SOCKSConnect(self.writer)
+        prot_bind.connection_made = connection_made
         loop = asyncio.get_event_loop()
-        server = await loop.create_server(on_bind, '0.0.0.0', 0)
-        bind_addr = server.sockets[0].getsockname()[:2]
+        bind_server = await loop.create_server(lambda : prot_bind, '0.0.0.0', 0)
+        bind_addr = bind_server.sockets[0].getsockname()[:2]
         self.reply(self.code_granted, bind_addr)
+        try:
+            return await asyncio.wait_for(future, timeout)
+        except Exception as e:
+            bind_server.close()
+            raise e
+
+    async def socks_bind(self):
+        data_len_out = data_len_in = '-'
+        try:
+            trans_remote, prot_remote = await self.get_bind_connection()
+        except:
+            self.reply(self.code_rejected, self.empty_addr)
+        else:
+            dest_addr = trans_remote.get_extra_info('peername')
+            if dest_addr[0] == self.addr[0]:
+                self.reply(self.code_granted, dest_addr)
+                data_len_out = await self.forward_data(trans_remote)
+                data_len_in = prot_remote.data_len
+            else:
+                self.reply(self.code_rejected, dest_addr)
+        logger.info('> %s:%d TCP %s/bind %s/in %s/out',
+                dest_addr[0], dest_addr[1], self.version,
+                data_len_in, data_len_out)
 
     async def handle(self):
         command = await self.hand_shake()
