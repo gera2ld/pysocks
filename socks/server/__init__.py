@@ -38,9 +38,8 @@ class SOCKSServer:
 
 def serve(config=None):
     loop = asyncio.get_event_loop()
-    server = SOCKSServer(config)
-    coro = server.serve()
-    server = loop.run_until_complete(coro)
+    socks_server = SOCKSServer(config)
+    server = loop.run_until_complete(socks_server.serve())
     logger.info('Socks server v2 - by Gerald')
     logger.info('Serving SOCKS on %s, port %d', *(server.sockets[0].getsockname()[:2]))
     loop.run_forever()
