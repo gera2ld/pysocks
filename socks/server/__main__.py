@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import argparse, logging
-from . import serve, logger, Config
+from . import SOCKSServer, logger, Config
 from .proxy import SkipPicker
 
 logger.setLevel(logging.INFO)
@@ -36,4 +36,4 @@ config.add_picker(SkipPicker((
     'localhost',
 )))
 
-serve(config)
+SOCKSServer(config).serve()

@@ -1,16 +1,15 @@
-pysocks
-===
+# pysocks
 
 This is a SOCKS server and client package built with `asyncio` (requires Python 3.5+).
 
-Installation
----
+## Installation
+
 ``` sh
 $ pip3 install git+https://github.com/gera2ld/pysocks.git
 ```
 
-Usage
----
+## Usage
+
 * SOCKS server
 
   shell command:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import asyncio
+from gera2ld.pyserve import serve_forever
 from .logger import logger
 from .config import Config
 from .socks4 import SOCKS4Handler
@@ -12,8 +13,9 @@ class SOCKSServer:
         5: SOCKS5Handler,
     }
 
-    def __init__(self, config = None):
+    def __init__(self, config=None, loop=None):
         self.config = config or Config()
+        self.loop = loop or asyncio.get_event_loop()
 
     async def handle(self, reader, writer):
         try:
@@ -31,15 +33,9 @@ class SOCKSServer:
             except asyncio.streams.IncompleteReadError:
                 pass
 
-    async def serve(self, loop=None):
-        if loop is None:
-            loop = asyncio.get_event_loop()
-        return await asyncio.start_server(self.handle, self.config.host, self.config.port, loop=loop)
+    async def start_server(self):
+        self.server = await asyncio.start_server(self.handle, self.config.host, self.config.port, loop=self.loop)
 
-def serve(config=None):
-    loop = asyncio.get_event_loop()
-    socks_server = SOCKSServer(config)
-    server = loop.run_until_complete(socks_server.serve())
-    logger.info('Socks server v2 - by Gerald')
-    logger.info('Serving SOCKS on %s, port %d', *(server.sockets[0].getsockname()[:2]))
-    loop.run_forever()
+    def serve(self):
+        self.loop.run_until_complete(self.start_server())
+        serve_forever(self.server, self.loop, 'socks:')
