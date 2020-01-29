@@ -7,9 +7,8 @@ from .proxy import ProxyResult, ProxyPicker, RandomPicker
 class InvalidProxy(Exception): pass
 
 class Proxy:
-    def __init__(self, host, port, version, user=None, pwd=None, remote_dns=False):
-        self.host = host
-        self.port = port
+    def __init__(self, bind, version, user=None, pwd=None, remote_dns=False):
+        self.bind = bind
         self.version = version
         if version == 4:
             user = pwd = None
@@ -21,25 +20,24 @@ class Proxy:
         self.remote_dns = remote_dns
 
     def __hash__(self):
-        return hash((self.host, self.port, self.version, self.user, self.pwd))
+        return hash((self.bind, self.version, self.user, self.pwd))
 
     def __eq__(self, other):
         return hash(self) == hash(other)
 
     def __repr__(self):
         if self.user is None:
-            return '<socks%d://%s:%d>' % (self.version, self.host, self.port)
-        return '<%s@socks%d://%s:%d>' % (self.user, self.version, self.host, self.port)
+            return '<socks%d://%s>' % (self.version, self.bind)
+        return '<%s@socks%d://%s>' % (self.user, self.version, self.bind)
 
 class Config:
     bufsize = 4096
 
-    def __init__(self, host='127.0.0.1', port=1080):
+    def __init__(self, bind='127.0.0.1:1080'):
         self.users = {}
         self.versions = {5}
         self.socks5methods = 0,
-        self.host = host
-        self.port = port
+        self.bind = bind
         self.set_proxies()
         self.proxy_pickers = []
         self.add_picker(RandomPicker)

@@ -15,15 +15,14 @@ $ pip3 install git+https://github.com/gera2ld/pysocks.git
   shell command:
   ``` sh
   # Start a server
-  $ python3 -m socks.server -p 1081
+  $ python3 -m socks.server -b 127.0.0.1:1080
   ```
 
   or python script:
   ``` python
   from socks.server import Config, serve
 
-  config = Config()
-  config.port = 1081
+  config = Config('127.0.0.1:1080')
   serve(config)
   ```
 
@@ -33,11 +32,11 @@ $ pip3 install git+https://github.com/gera2ld/pysocks.git
   import asyncio
   from socks.client import SOCKS5Client
 
-  client = SOCKS5Client(('127.0.0.1', 1080))
-  client.handle_connect(('www.google.com', 80))
-  client.writer.write(b'...')
+  client = SOCKS5Client('127.0.0.1:1080')
   loop = asyncio.get_event_loop()
-  loop.run_until_complete(client.reader.read())
+  loop.run_until_complete(client.handle_connect(('www.google.com', 80)))
+  client.writer.write(b'...')
+  print(loop.run_until_complete(client.reader.read()))
   ```
 
 * SOCKS handler for `urllib`

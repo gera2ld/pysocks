@@ -12,16 +12,14 @@ ch.setFormatter(fmt)
 logger.addHandler(ch)
 
 parser = argparse.ArgumentParser(description = 'HTTP server by Gerald.')
-parser.add_argument('-H', '--host', nargs='*', help='the host of SOCKS server')
-parser.add_argument('-p', '--port', default=1080, help='the port of SOCKS server')
+parser.add_argument('-b', '--bind', default='127.0.0.1:1080', help='the bind address of SOCKS server')
 parser.add_argument('-a', '--auth', nargs=2, action='append', help='username and password pairs')
 parser.add_argument('--versions', nargs='+', help='allowed versions, e.g 4 5')
 
 config = Config()
 args = parser.parse_args()
-if args.host is not None:
-    config.host = args.host
-config.port = args.port
+if args.bind is not None:
+    config.bind = args.bind
 if args.auth is not None:
     for user, pwd in args.auth:
         config.set_user(user, pwd)

@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "pysocks"
+version = "0.1.0"
+description = "SOCKS client and server based on asyncio"
+authors = ["Gerald <gera2ld@163.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.5"
+"gera2ld-pyserve" = "^0.0.7"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
