@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import inspect
+from gera2ld.pyserve import parse_addr
 from .logger import logger
 from .proxy import ProxyResult, ProxyPicker, RandomPicker
 
@@ -8,7 +9,10 @@ class InvalidProxy(Exception): pass
 
 class Proxy:
     def __init__(self, bind, version, user=None, pwd=None, remote_dns=False):
+        pathinfo = parse_addr(bind)
         self.bind = bind
+        self.host = pathinfo['host']
+        self.port = pathinfo['port']
         self.version = version
         if version == 4:
             user = pwd = None
@@ -64,12 +68,8 @@ class Config:
             if proxy is None:
                 proxies_set.add(proxy)
                 continue
-            try:
-                proxy = Proxy(*proxy)
-            except:
-                pass
-            else:
-                proxies_set.add(proxy)
+            proxy = Proxy(*proxy)
+            proxies_set.add(proxy)
         self.proxies = list(proxies_set)
 
     def add_picker(self, picker=None):

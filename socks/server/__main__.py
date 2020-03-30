@@ -27,7 +27,7 @@ if args.versions is not None:
     config.versions = set(args.versions)
 config.set_proxies([
     None,
-    # ('127.0.0.1', 1080, 5, None, None, True),
+    # ('127.0.0.1:1080', 5, None, None, True),
 ])
 config.add_picker(SkipPicker((
     '127.0.0.1',

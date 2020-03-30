@@ -6,8 +6,8 @@ authors = ["Gerald <gera2ld@163.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.5"
-"gera2ld-pyserve" = "^0.0.7"
+python = "^3.6"
+gera2ld-pyserve = "^0.1.1"
 
 [tool.poetry.dev-dependencies]
 

@@ -29,7 +29,7 @@ class SOCKSServer:
         if handler is not None:
             try:
                 await handler(reader, writer, self.config).handle()
-            except asyncio.streams.IncompleteReadError:
+            except asyncio.IncompleteReadError:
                 pass
 
     async def start_server(self):

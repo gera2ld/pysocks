@@ -37,4 +37,4 @@ class SkipPicker(ProxyPicker):
 
 class RandomPicker(ProxyPicker):
     def pick(self, result):
-        result.proxy = random.choice(result.proxies)
+        result.proxy = random.choice(result.proxies) if result.proxies else None
