@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import struct, asyncio, socket
-from .base import BaseHandler
+from .base import BaseHandler, SOCKSError
 from ..utils import SOCKS5MixIn
 from . import logger
 
@@ -28,7 +28,7 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
             method = self.method = 255
         self.writer.write(struct.pack('BB', self.version, method))
         if method == 255:
-            return
+            raise SOCKSError('No supported method')
         if method == 2:
             # Authentication needed
             res, = await self.reader.readexactly(1) # must be 0x01
@@ -39,10 +39,9 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
             code = 0 if self.config.authenticate(user, pwd) else 1
             self.writer.write(struct.pack('BB', 1, code))
             if code > 0:
-                logger.debug('Invalid user or password.')
-                return
+                raise SOCKSError('Invalid user or password')
         version, command, _, addr_type = struct.unpack('BBBB', (await self.reader.readexactly(4)))
-        assert version == 5, 'Invalid SOCKS version.'
+        assert version == 5, 'Invalid SOCKS version'
         if addr_type == 1:
             # IPv4
             host = socket.inet_ntoa((await self.reader.readexactly(4)))

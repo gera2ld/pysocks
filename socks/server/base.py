@@ -18,6 +18,11 @@ class SOCKSConnect(ProtocolMixIn, asyncio.Protocol):
         self.data_len += len(data)
         self.writer.write(data)
 
+class SOCKSError(Exception):
+    def __init__(self, message):
+        super().__init__()
+        self.message = message
+
 class BaseHandler:
     '''
     Base handler of SOCKS protocol
@@ -32,7 +37,8 @@ class BaseHandler:
         self.reader = reader
         self.writer = writer
         self.config = config
-        # self.socket = writer.transport.get_extra_info('socket')
+        self.client_addr = writer.transport.get_extra_info('peername')[:2]
+        self.addr = '-', 0
 
     def reply_address(self, address = None):
         '''
@@ -85,6 +91,8 @@ class BaseHandler:
     async def socks_connect(self):
         try:
             trans_remote, prot_remote = await self.get_connection()
+        except SOCKSError:
+            raise
         except Exception as e:
             if isinstance(e, OSError):
                 # No route to host
@@ -98,9 +106,7 @@ class BaseHandler:
             self.reply(self.code_granted, trans_remote.get_extra_info('sockname'))
             data_len_out = await self.forward_data(trans_remote)
             data_len_in = prot_remote.data_len
-        logger.info('> %s:%d TCP %s/connect %s/in %s/out',
-                self.addr[0], self.addr[1], self.version,
-                data_len_in, data_len_out)
+        return data_len_in, data_len_out
 
     async def get_bind_connection(self, timeout=3):
         def connection_made(transport):
@@ -134,27 +140,35 @@ class BaseHandler:
                 data_len_in = prot_remote.data_len
             else:
                 self.reply(self.code_rejected, dest_addr)
-        logger.info('> %s:%d TCP %s/bind %s/in %s/out',
-                dest_addr[0], dest_addr[1], self.version,
-                data_len_in, data_len_out)
+        return data_len_in, data_len_out
 
     async def handle(self):
-        command = await self.hand_shake()
-        if command is None:
-            # connection aborted due to authentication failure
-            return
+        command = None
+        try:
+            command = await self.hand_shake()
+        except SOCKSError as e:
+            error = e.message
+        else:
+            error = None
         name = self.commands.get(command)
         handle = None
         if name:
             handle = getattr(self, 'socks_' + name, None)
+        data_len_out = data_len_in = '-'
         if handle is not None:
             try:
-                await handle()
+                data_len_in, data_len_out = await handle()
             except Exception as e:
                 # TODO net error
+                error = str(e)
                 logger.debug(type(e))
                 import traceback
                 traceback.print_exc()
                 self.reply(self.code_rejected)
         else:
             self.reply(self.code_not_supported)
+        logger.info('%s:%d -> %s:%d TCP %s/%s %s/in %s/out (%s)',
+                *self.client_addr,
+                self.addr[0], self.addr[1], self.version, name,
+                data_len_in, data_len_out, error or '-')
+
