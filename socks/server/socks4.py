@@ -3,6 +3,7 @@
 import struct, socket, io
 from .base import BaseHandler
 from ..utils import SOCKS4MixIn
+from . import logger
 
 class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
     '''
@@ -38,4 +39,5 @@ class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
         else:
             host = socket.inet_ntoa(ip)
         self.addr = host, port
+        logger.debug('hand_shake v4: %s %s:%d', command, host, port)
         return command

@@ -55,4 +55,5 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
             host = socket.inet_ntop(socket.AF_INET6, (await self.reader.readexactly(16)))
         port, = struct.unpack('!H', (await self.reader.readexactly(2)))
         self.addr = host, port
+        logger.debug('hand_shake v5: %s %s:%d', command, host, port)
         return command

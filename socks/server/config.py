@@ -8,7 +8,7 @@ from .proxy import ProxyResult, ProxyPicker, RandomPicker
 class InvalidProxy(Exception): pass
 
 class Proxy:
-    def __init__(self, bind, version, user=None, pwd=None, remote_dns=False):
+    def __init__(self, bind, version, user=None, pwd=None, remote_dns=True):
         pathinfo = parse_addr(bind)
         self.bind = bind
         self.host = pathinfo['host']
@@ -32,7 +32,7 @@ class Proxy:
     def __repr__(self):
         if self.user is None:
             return '<socks%d://%s>' % (self.version, self.bind)
-        return '<%s@socks%d://%s>' % (self.user, self.version, self.bind)
+        return '<socks%d://%s@%s>' % (self.version, self.user, self.bind)
 
 class Config:
     bufsize = 4096
