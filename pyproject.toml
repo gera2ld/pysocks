@@ -1,9 +1,12 @@
 [tool.poetry]
-name = "pysocks"
+name = "gera2ld.socks"
 version = "0.1.0"
 description = "SOCKS client and server based on asyncio"
 authors = ["Gerald <gera2ld@163.com>"]
 license = "MIT"
+packages = [
+  { include = 'gera2ld' },
+]
 
 [tool.poetry.dependencies]
 python = "^3.6"

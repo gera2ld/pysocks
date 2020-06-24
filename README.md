@@ -1,11 +1,11 @@
-# pysocks
+# gera2ld.socks
 
 This is a SOCKS server and client package built with `asyncio` (requires Python 3.5+).
 
 ## Installation
 
 ``` sh
-$ pip3 install git+https://github.com/gera2ld/pysocks.git
+$ pip3 install gera2ld.socks
 ```
 
 ## Usage
@@ -15,12 +15,12 @@ $ pip3 install git+https://github.com/gera2ld/pysocks.git
   shell command:
   ``` sh
   # Start a server
-  $ python3 -m socks.server -b 127.0.0.1:1080
+  $ python3 -m gera2ld.socks.server -b 127.0.0.1:1080
   ```
 
   or python script:
   ``` python
-  from socks.server import Config, serve
+  from gera2ld.socks.server import Config, serve
 
   config = Config('127.0.0.1:1080')
   serve(config)
@@ -30,7 +30,7 @@ $ pip3 install git+https://github.com/gera2ld/pysocks.git
 
   ``` python
   import asyncio
-  from socks.client import SOCKS5Client
+  from gera2ld.socks.client import SOCKS5Client
 
   client = SOCKS5Client('127.0.0.1:1080')
   loop = asyncio.get_event_loop()
@@ -43,7 +43,7 @@ $ pip3 install git+https://github.com/gera2ld/pysocks.git
 
   ``` python
   from urllib import request
-  from socks.client.handler import SOCKSProxyHandler
+  from gera2ld.socks.client.handler import SOCKSProxyHandler
 
   # SOCKSProxyHandler may have parameters below
   # - version: 4 or 5

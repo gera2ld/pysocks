@@ -156,7 +156,7 @@ class BaseHandler:
             error = None
         name = self.commands.get(command)
         handle = None
-        if name:
+        if name and error is None:
             handle = getattr(self, 'socks_' + name, None)
         data_len_out = data_len_in = '-'
         if handle is not None:

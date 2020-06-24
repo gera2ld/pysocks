@@ -1,24 +1,31 @@
 #!/usr/bin/env python
 # coding=utf-8
 import unittest, asyncio, io
-from socks.server import SOCKSServer, SOCKS4Handler, SOCKS5Handler
-from socks.server.base import SOCKSConnect, BaseHandler
+from gera2ld.socks.server import SOCKSServer, SOCKS4Handler, SOCKS5Handler
+from gera2ld.socks.server.base import SOCKSConnect, BaseHandler
 
 SOCKS4Connect = b'\4\1\0P\1\2\3\4\0'
 SOCKS5Connect = b'\5\1\0\5\1\0\1\1\2\3\4\0P'
 BootstrapAddr = '1.2.3.4', 80
 TESTDATA = b'Hello world'
 
+class FakeWriter(io.BytesIO):
+    def __init__(self, transport=None):
+        super().__init__()
+        self.transport = transport or FakeTransport()
+
 class FakeTransport:
     SockAddr = '4.5.6.7', 8888
 
-    def __init__(self, protocol):
+    def __init__(self, protocol=None):
         self.protocol = protocol
-        self.writer = io.BytesIO()
-        protocol.connection_made(self)
+        self.writer = FakeWriter(self)
+        if protocol:
+            protocol.connection_made(self)
 
     def get_extra_info(self, key):
-        return self.SockAddr if key == 'sockname' else None
+        if key in ('sockname', 'peername'):
+            return self.SockAddr
 
     def write(self, data):
         self.writer.write(data)
@@ -50,12 +57,14 @@ class TestBootstrap(unittest.TestCase):
 
     def hook_handler(self, handler):
         self.handler = handler
-        handler.socks_connect = asyncio.coroutine(lambda : None)
+        async def noop():
+            return 0, 0
+        handler.socks_connect = noop
 
     def test_socks4(self):
         reader = asyncio.StreamReader()
         reader.feed_data(SOCKS4Connect)
-        writer = io.BytesIO()
+        writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.handler.get_class(), SOCKS4Handler)
@@ -65,7 +74,7 @@ class TestBootstrap(unittest.TestCase):
     def test_socks5(self):
         reader = asyncio.StreamReader()
         reader.feed_data(SOCKS5Connect)
-        writer = io.BytesIO()
+        writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.handler.get_class(), SOCKS5Handler)
@@ -76,14 +85,23 @@ class TestBootstrap(unittest.TestCase):
         self.server.config.set_user('hello', 'world')
         reader = asyncio.StreamReader()
         reader.feed_data(SOCKS5Connect)
-        writer = io.BytesIO()
+        writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
-        self.assertEqual(getattr(self.handler, 'addr', None), None)
-        self.assertEqual(writer.getvalue(), b'\5\xff')
+        self.assertEqual(self.handler.addr, ('-', 0))
+        self.assertEqual(
+            writer.getvalue(),
+            b'\5'           # version
+            b'\xff'         # no supported method
+            b'\5'           # reply
+            b'\7'           # not supported
+            b'\0\1'         # ipv4
+            b'\0\0\0\0'     # host
+            b'\0\0'         # port
+        )
         reader = asyncio.StreamReader()
         reader.feed_data(b'\5\1\2\1\5hello\5world\5\1\0\1\1\2\3\4\0P')
-        writer = io.BytesIO()
+        writer = FakeWriter()
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(writer.getvalue(), b'\5\2\1\0')
 
@@ -101,9 +119,9 @@ class TestConnect(unittest.TestCase):
 
     def hook_handler(self, handler):
         self.handler = handler
-        handler.get_connection = asyncio.coroutine(self.get_connection)
+        handler.get_connection = self.get_connection
 
-    def get_connection(self):
+    async def get_connection(self):
         proto = SOCKSConnect(self.handler.writer)
         self.trans = FakeTransport(proto)
         return self.trans, proto
@@ -113,7 +131,7 @@ class TestConnect(unittest.TestCase):
         reader.feed_data(SOCKS4Connect)
         reader.feed_data(TESTDATA)
         reader.feed_eof()
-        writer = io.BytesIO()
+        writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.trans.writer.getvalue(), TESTDATA)
@@ -124,7 +142,7 @@ class TestConnect(unittest.TestCase):
         reader.feed_data(SOCKS5Connect)
         reader.feed_data(TESTDATA)
         reader.feed_eof()
-        writer = io.BytesIO()
+        writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.trans.writer.getvalue(), TESTDATA)

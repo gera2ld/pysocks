@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import unittest
-from socks.utils import SOCKS4MixIn, SOCKS5MixIn
+from gera2ld.socks.utils import SOCKS4MixIn, SOCKS5MixIn
 
 class TestUtils(unittest.TestCase):
 
