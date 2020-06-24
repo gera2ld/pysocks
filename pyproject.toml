@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "SOCKS client and server based on asyncio"
 authors = ["Gerald <gera2ld@163.com>"]
 license = "MIT"
+repository = "https://github.com/gera2ld/pysocks"
 packages = [
   { include = 'gera2ld' },
 ]
