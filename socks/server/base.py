@@ -74,19 +74,22 @@ class BaseHandler:
         5: SOCKS5Client,
     }
     async def get_connection(self):
-        proxy = self.config.get_proxy(self.addr)
-        addr = (await get_host(self.addr[0])), self.addr[1]
+        host, port = self.addr
+        hostname = None
+        if not self.config.remote_dns:
+            hostname = host
+            host = await get_host(host)
+        self.remote_addr = host, port
+        proxy = self.config.get_proxy(host=host, port=port, hostname=hostname)
         if proxy is None:
             loop = asyncio.get_event_loop()
-            return await loop.create_connection(lambda : SOCKSConnect(self.writer), *addr)
+            return await loop.create_connection(lambda : SOCKSConnect(self.writer), host, port)
         Client = self.ClientClasses[proxy.version]
-        kw = {
-            'remote_dns': proxy.remote_dns,
-        }
+        kw = {}
         if proxy.version == 5 and proxy.user is not None:
             kw['auth'] = proxy.user, proxy.pwd
-        client = Client((proxy.host, proxy.port), **kw)
-        await client.handle_connect(addr)
+        client = Client((proxy.host, proxy.port), remote_dns=self.config.remote_dns, **kw)
+        await client.handle_connect((host, port))
         return client.writer, client.forward(self.writer, self.config.bufsize)
 
     async def socks_connect(self):

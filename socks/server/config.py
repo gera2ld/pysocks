@@ -8,7 +8,7 @@ from .proxy import ProxyResult, ProxyPicker, RandomPicker
 class InvalidProxy(Exception): pass
 
 class Proxy:
-    def __init__(self, bind, version, user=None, pwd=None, remote_dns=True):
+    def __init__(self, bind, version, user=None, pwd=None):
         pathinfo = parse_addr(bind)
         self.bind = bind
         self.host = pathinfo['host']
@@ -21,7 +21,6 @@ class Proxy:
             raise InvalidProxy
         self.user = user
         self.pwd = pwd
-        self.remote_dns = remote_dns
 
     def __hash__(self):
         return hash((self.bind, self.version, self.user, self.pwd))
@@ -37,7 +36,7 @@ class Proxy:
 class Config:
     bufsize = 4096
 
-    def __init__(self, bind='127.0.0.1:1080'):
+    def __init__(self, bind='127.0.0.1:1080', remote_dns=False):
         self.users = {}
         self.versions = {5}
         self.socks5methods = 0,
@@ -45,6 +44,7 @@ class Config:
         self.set_proxies()
         self.proxy_pickers = []
         self.add_picker(RandomPicker)
+        self.remote_dns = remote_dns
 
     def set_user(self, user, pwd=None):
         if isinstance(user, str): user = user.encode()
@@ -83,5 +83,5 @@ class Config:
         self.proxy_pickers.append(ins)
         self.proxy_pickers.sort(key=lambda picker: picker.priority, reverse=True)
 
-    def get_proxy(self, addr):
-        return ProxyResult.get(self.proxies, self.proxy_pickers, addr)
+    def get_proxy(self, host, port, hostname):
+        return ProxyResult.get(self.proxies, self.proxy_pickers, host, port, hostname)

@@ -6,17 +6,20 @@ class ProxyResult:
     terminal = False
     proxy = None
 
-    def __init__(self, proxies, pickers, addr):
+    def __init__(self, proxies, pickers, host, port, hostname):
         self.proxies = proxies
         self.pickers = pickers
-        self.addr = addr
+        self.host = host
+        self.port = port
+        self.hostname = hostname
+        self.proxy = None
         for picker in self.pickers:
             picker.pick(self)
             if self.terminal: break
 
     @staticmethod
-    def get(proxies, pickers, addr):
-        result = ProxyResult(proxies, pickers, addr)
+    def get(proxies, pickers, host, port, hostname):
+        result = ProxyResult(proxies, pickers, host, port, hostname)
         return result.proxy
 
 class ProxyPicker:
@@ -30,8 +33,7 @@ class SkipPicker(ProxyPicker):
         self.data = skip_list
 
     def pick(self, result):
-        host, port = result.addr
-        if host in self.data:
+        if result.host in self.data:
             result.proxy = None
             result.terminal = True
 
