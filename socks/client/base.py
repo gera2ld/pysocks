@@ -24,13 +24,6 @@ class BaseClient:
         self.addr = res['host'], res['port']
         self.remote_dns = remote_dns
 
-    async def get_host(self, addr):
-        loop = asyncio.get_event_loop()
-        for res in (await loop.getaddrinfo(*addr)):
-            af, socktype, proto, canonname, sa = res
-            if af is socket.AF_INET:
-                return sa[:2]
-
     async def get_connection(self):
         self.reader, self.writer = await asyncio.open_connection(*self.addr)
 

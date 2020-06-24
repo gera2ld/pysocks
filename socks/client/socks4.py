@@ -2,7 +2,7 @@
 # coding=utf-8
 import socket, struct, asyncio
 from .base import BaseClient
-from ..utils import SOCKS4MixIn
+from ..utils import SOCKS4MixIn, get_host
 
 class SOCKS4Client(BaseClient, SOCKS4MixIn):
     '''
@@ -23,7 +23,7 @@ class SOCKS4Client(BaseClient, SOCKS4MixIn):
             if remote_dns:
                 addr = '0.0.0.1', addr[1]
             else:
-                addr = await self.get_host(addr)
+                addr = (await get_host(addr[0])), addr[1]
         data = struct.pack('B', command) + self.pack_address(addr) + self.userid.encode() + b'\0'
         if remote_dns:
             data += hostname.encode() + b'\0'

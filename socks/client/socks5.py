@@ -2,7 +2,7 @@
 # coding=utf-8
 import struct, socket
 from .base import BaseClient
-from ..utils import SOCKS5MixIn
+from ..utils import SOCKS5MixIn, get_host
 
 class SOCKS5Client(BaseClient, SOCKS5MixIn):
     '''
@@ -20,8 +20,9 @@ class SOCKS5Client(BaseClient, SOCKS5MixIn):
     async def hand_shake(self, command, addr):
         l = len(self.methods)
         self.writer.write(struct.pack('B%dB' % l, l, *self.methods))
-        ver, method = struct.unpack('BB', await self.reader.readexactly(2))
-        assert method < 255, 'Method not supported.'
+        version, method = struct.unpack('BB', await self.reader.readexactly(2))
+        assert version == 5, 'Version unmatched'
+        assert method < 255, 'Method unsupported'
         if method == 2:
             user, pwd = self.auth
             luser = len(user)
@@ -30,9 +31,9 @@ class SOCKS5Client(BaseClient, SOCKS5MixIn):
             self.writer.write(data)
             _, ret = struct.unpack('BB', await self.reader.readexactly(2))
             assert _ == 1
-            assert ret == 0, 'Authentication failed.'
+            assert ret == 0, 'Authentication failed'
         if not self.remote_dns:
-            addr = await self.get_host(addr)
+            addr = (await get_host(addr[0])), addr[1]
         data = struct.pack('BB', self.version, command) + self.pack_address(addr)
         self.writer.write(data)
 
