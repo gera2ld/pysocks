@@ -17,12 +17,11 @@ parser = argparse.ArgumentParser(description = 'HTTP server by Gerald.')
 parser.add_argument('-b', '--bind', default='127.0.0.1:1080', help='the bind address of SOCKS server')
 parser.add_argument('-a', '--auth', nargs=2, action='append', help='username and password pairs')
 parser.add_argument('-x', '--proxy', action='append', help='use proxies')
+parser.add_argument('--remote-dns', action='store_true', help='resolve DNS at remote server')
 parser.add_argument('--versions', nargs='+', help='allowed versions, e.g 4 5')
 
-config = Config()
 args = parser.parse_args()
-if args.bind is not None:
-    config.bind = args.bind
+config = Config(args.bind, args.remote_dns)
 if args.auth is not None:
     for user, pwd in args.auth:
         config.set_user(user, pwd)
