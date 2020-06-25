@@ -11,7 +11,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.6"
-gera2ld-pyserve = "^0.1.1"
+gera2ld-pyserve = "^0.2.0"
 async_dns = "^1.0.10"
 
 [tool.poetry.dev-dependencies]
