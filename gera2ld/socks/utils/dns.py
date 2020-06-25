@@ -5,13 +5,11 @@ from async_dns.resolver import ProxyResolver
 
 resolver = None
 
-def get_resolver():
+def set_resolver(_resolver=None):
     global resolver
-    if resolver is None:
-        resolver = ProxyResolver(proxies=[
-            (None, os.environ.get('DNS_SERVER', '114.114.114.114').split(',')),
-        ], protocol=TCP)
-    return resolver
+    resolver = _resolver or ProxyResolver(proxies=[
+        (None, os.environ.get('GERA2ld_SOCKS_NAMESERVER', '114.114.114.114').split(',')),
+    ], protocol=TCP)
 
 def is_ip(host):
     try:
@@ -21,9 +19,10 @@ def is_ip(host):
     return True
 
 async def get_host(host):
-    resolver = get_resolver()
     if is_ip(host):
         return host
+    if resolver is None:
+        set_resolver()
     res = await resolver.query(host)
     ip = None
     if res:
