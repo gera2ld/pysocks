@@ -10,14 +10,14 @@ TESTDATA = b'Hello world'
 
 class TestConnect(unittest.TestCase):
 
-    async def get_connection(self, client, reader):
+    async def do_connect(self, client, reader):
         client.reader = reader
         client.writer = io.BytesIO()
 
     def test_socks4(self):
         reader = asyncio.StreamReader()
         client = SOCKS4Client(PROXY_ADDR)
-        client.get_connection = functools.partial(self.get_connection, client, reader)
+        client.do_connect = functools.partial(self.do_connect, client, reader)
         reader.feed_data(b'\0Z"\xb8\1\2\3\4')
         reader.feed_data(TESTDATA)
         reader.feed_eof()
@@ -35,7 +35,7 @@ class TestConnect(unittest.TestCase):
         reader = asyncio.StreamReader()
         writer = io.BytesIO()
         client = SOCKS5Client(PROXY_ADDR)
-        client.get_connection = functools.partial(self.get_connection, client, reader)
+        client.do_connect = functools.partial(self.do_connect, client, reader)
         reader.feed_data(b'\5\0\5\0\0\1\1\2\3\4"\xb8')
         reader.feed_data(TESTDATA)
         reader.feed_eof()

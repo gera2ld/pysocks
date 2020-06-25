@@ -69,11 +69,15 @@ class BaseHandler:
         trans_remote.close()
         return data_len
 
+    async def handle_connect_direct(self):
+        loop = asyncio.get_event_loop()
+        return await loop.create_connection(lambda : SOCKSConnect(self.writer), *self.addr)
+
     ClientClasses = {
         4: SOCKS4Client,
         5: SOCKS5Client,
     }
-    async def get_connection(self):
+    async def handle_connect(self):
         host, port = self.addr
         hostname = None
         if not self.config.remote_dns:
@@ -82,8 +86,7 @@ class BaseHandler:
         self.remote_addr = host, port
         proxy = self.config.get_proxy(host=host, port=port, hostname=hostname)
         if proxy is None:
-            loop = asyncio.get_event_loop()
-            return await loop.create_connection(lambda : SOCKSConnect(self.writer), host, port)
+            return await self.handle_connect_direct()
         Client = self.ClientClasses[proxy.version]
         kw = {}
         if proxy.version == 5 and proxy.user is not None:
@@ -94,7 +97,7 @@ class BaseHandler:
 
     async def socks_connect(self):
         try:
-            trans_remote, prot_remote = await self.get_connection()
+            trans_remote, prot_remote = await self.handle_connect()
         except SOCKSError:
             raise
         except Exception as e:

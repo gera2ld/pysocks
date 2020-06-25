@@ -24,11 +24,11 @@ class BaseClient:
         self.addr = res['host'], res['port']
         self.remote_dns = remote_dns
 
-    async def get_connection(self):
+    async def do_connect(self):
         self.reader, self.writer = await asyncio.open_connection(*self.addr)
 
-    async def connect_proxy(self):
-        await self.get_connection()
+    async def handle_connect_proxy(self):
+        await self.do_connect()
         self.writer.write(struct.pack('B', self.version))
 
     async def get_reply(self):
@@ -38,7 +38,7 @@ class BaseClient:
         self.proxy_addr = await self.get_address()
 
     async def handle_connect(self, addr):
-        await self.connect_proxy()
+        await self.handle_connect_proxy()
         await self.hand_shake(1, addr)
         await self.get_reply()
 

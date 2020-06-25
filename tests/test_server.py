@@ -119,9 +119,9 @@ class TestConnect(unittest.TestCase):
 
     def hook_handler(self, handler):
         self.handler = handler
-        handler.get_connection = self.get_connection
+        handler.handle_connect = self.handle_connect
 
-    async def get_connection(self):
+    async def handle_connect(self):
         proto = SOCKSConnect(self.handler.writer)
         self.trans = FakeTransport(proto)
         return self.trans, proto
