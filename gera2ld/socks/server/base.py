@@ -2,7 +2,7 @@
 # coding=utf-8
 import asyncio, struct
 from . import logger
-from ..client import SOCKS4Client, SOCKS5Client
+from ..client import create_client
 from ..utils import ProtocolMixIn, get_host
 
 class SOCKSConnect(ProtocolMixIn, asyncio.Protocol):
@@ -73,10 +73,6 @@ class BaseHandler:
         loop = asyncio.get_event_loop()
         return await loop.create_connection(lambda : SOCKSConnect(self.writer), *self.addr)
 
-    ClientClasses = {
-        4: SOCKS4Client,
-        5: SOCKS5Client,
-    }
     async def handle_connect(self):
         host, port = self.addr
         hostname = None
@@ -87,11 +83,11 @@ class BaseHandler:
         proxy = self.config.get_proxy(host=host, port=port, hostname=hostname)
         if proxy is None:
             return await self.handle_connect_direct()
-        Client = self.ClientClasses[proxy.version]
-        kw = {}
-        if proxy.version == 5 and proxy.user is not None:
-            kw['auth'] = proxy.user, proxy.pwd
-        client = Client((proxy.host, proxy.port), remote_dns=self.config.remote_dns, **kw)
+        client = create_client(
+            proxy.version,
+            (proxy.host, proxy.port),
+            None if proxy.user is None else (proxy.user, proxy.pwd),
+            remote_dns=self.config.remote_dns)
         await client.handle_connect((host, port))
         return client.writer, client.forward(self.writer, self.config.bufsize)
 

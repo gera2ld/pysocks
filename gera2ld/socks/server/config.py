@@ -1,37 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
 import inspect
-from gera2ld.pyserve import parse_addr
 from .logger import logger
 from .proxy import ProxyResult, ProxyPicker, RandomPicker
-
-class InvalidProxy(Exception): pass
-
-class Proxy:
-    def __init__(self, bind, version, user=None, pwd=None):
-        pathinfo = parse_addr(bind)
-        self.bind = bind
-        self.host = pathinfo['host']
-        self.port = pathinfo['port']
-        self.version = version
-        if version == 4:
-            user = pwd = None
-        elif version != 5:
-            logger.warn('Invalid proxy version: %s', version)
-            raise InvalidProxy
-        self.user = user
-        self.pwd = pwd
-
-    def __hash__(self):
-        return hash((self.bind, self.version, self.user, self.pwd))
-
-    def __eq__(self, other):
-        return hash(self) == hash(other)
-
-    def __repr__(self):
-        if self.user is None:
-            return '<socks%d://%s>' % (self.version, self.bind)
-        return '<socks%d://%s@%s>' % (self.version, self.user, self.bind)
+from ..utils import SOCKSProxy
 
 class Config:
     bufsize = 4096
@@ -68,7 +40,7 @@ class Config:
             if proxy is None:
                 proxies_set.add(proxy)
                 continue
-            proxy = Proxy(*proxy)
+            proxy = SOCKSProxy(proxy)
             proxies_set.add(proxy)
         self.proxies = list(proxies_set)
 

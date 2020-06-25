@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 # coding=utf-8
-import socket, asyncio
+import asyncio
+import socket
+import ssl
 from urllib import request
 from http import client
-from . import SOCKS4Client, SOCKS5Client
+from . import create_client
+from ..utils import SOCKSProxy
 
 class SOCKSMixIn:
-    client_types = {
-        4: SOCKS4Client,
-        5: SOCKS5Client,
-    }
-
     def __init__(self, *k, socks_proxy=None, **kw):
         super().__init__(*k, **kw)
         self._socks_proxy = socks_proxy
@@ -44,12 +42,7 @@ class SOCKSMixIn:
                     raise
 
     def _tunnel_socks(self):
-        version, addr, auth = self._socks_proxy
-        cls = self.client_types.get(version, SOCKS5Client)
-        if cls is SOCKS5Client:
-            client = cls(addr, auth)
-        else:
-            client = cls(addr)
+        client = create_client(self._socks_proxy)
         loop = asyncio.get_event_loop()
         loop.run_until_complete(client.handle_connect((self.host, self.port)))
         self.sock = client.writer.get_extra_info('socket')
@@ -63,9 +56,11 @@ if hasattr(client, 'HTTPSConnection'):
         pass
 
 class SOCKSProxyHandler(request.HTTPHandler, request.HTTPSHandler):
-    def __init__(self, version, socks_addr, auth=None):
+    def __init__(self, proxy):
         super().__init__()
-        self._socks_proxy = version, socks_addr, auth
+        if isinstance(proxy, str):
+            proxy = SOCKSProxy(proxy)
+        self._socks_proxy = proxy
 
     def http_open(self, req):
         return self.do_open(HTTPConnection, req, socks_proxy=self._socks_proxy)
@@ -77,6 +72,6 @@ class SOCKSProxyHandler(request.HTTPHandler, request.HTTPSHandler):
                 socks_proxy=self._socks_proxy)
 
 if __name__ == '__main__':
-    opener = request.build_opener(SOCKSProxyHandler(5, ('127.0.0.1', 1081)))
-    r = opener.open('https://gerald.top')
+    opener = request.build_opener(SOCKSProxyHandler('socks5://127.0.0.1:1081'))
+    r = opener.open('https://www.example.com')
     print(r.read().decode())

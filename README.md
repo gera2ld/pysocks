@@ -30,9 +30,9 @@ $ pip3 install gera2ld.socks
 
   ``` python
   import asyncio
-  from gera2ld.socks.client import SOCKS5Client
+  from gera2ld.socks.client import create_client
 
-  client = SOCKS5Client('127.0.0.1:1080')
+  client = create_client('socks5://127.0.0.1:1080')
   loop = asyncio.get_event_loop()
   loop.run_until_complete(client.handle_connect(('www.google.com', 80)))
   client.writer.write(b'...')
@@ -45,13 +45,9 @@ $ pip3 install gera2ld.socks
   from urllib import request
   from gera2ld.socks.client.handler import SOCKSProxyHandler
 
-  # SOCKSProxyHandler may have parameters below
-  # - version: 4 or 5
-  # - proxy address: tuple(host, port)
-  # - auth: tuple(user, password) or None
-  handler = SOCKSProxyHandler(5, ('127.0.0.1', 1080))
+  handler = SOCKSProxyHandler('socks5://127.0.0.1:1080')
 
   opener = request.build_opener(handler)
-  r = opener.open('https://gerald.top')
+  r = opener.open('https://www.example.com')
   print(r.read().decode())
   ```

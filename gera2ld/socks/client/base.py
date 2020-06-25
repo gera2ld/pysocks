@@ -2,7 +2,6 @@
 # coding=utf-8
 import asyncio
 import struct, socket, io
-from gera2ld.pyserve import parse_addr
 from ..utils import ProtocolMixIn
 
 class ClientProtocol(ProtocolMixIn):
@@ -19,9 +18,8 @@ class BaseClient:
     Attributes of `version`, `reply_flag`, `code_granted` must be assigned in subclasses.
     Methods of `get_address` must be implemented in subclasses.
     '''
-    def __init__(self, bind, remote_dns=False):
-        res = parse_addr(bind)
-        self.addr = res['host'], res['port']
+    def __init__(self, addr, remote_dns=False):
+        self.addr = addr
         self.remote_dns = remote_dns
 
     async def do_connect(self):
