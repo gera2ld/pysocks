@@ -83,11 +83,7 @@ class BaseHandler:
         proxy = self.config.get_proxy(host=host, port=port, hostname=hostname)
         if proxy is None:
             return await self.handle_connect_direct()
-        client = create_client(
-            proxy.version,
-            (proxy.host, proxy.port),
-            None if proxy.user is None else (proxy.user, proxy.pwd),
-            remote_dns=self.config.remote_dns)
+        client = create_client(proxy, self.config.remote_dns)
         await client.handle_connect((host, port))
         return client.writer, client.forward(self.writer, self.config.bufsize)
 
