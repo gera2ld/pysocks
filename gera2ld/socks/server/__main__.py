@@ -3,6 +3,7 @@
 import argparse
 import logging
 import os
+from gera2ld.pyserve import run_forever
 from . import SOCKSServer, logger, Config
 from .proxy import SkipPicker
 
@@ -54,4 +55,4 @@ config.add_picker(SkipPicker((
     'localhost',
 )))
 
-SOCKSServer(config).serve()
+run_forever(SOCKSServer(config).start_server())

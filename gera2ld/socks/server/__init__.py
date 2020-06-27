@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import asyncio
-from gera2ld.pyserve import start_server, serve_forever
+from gera2ld.pyserve import start_server_asyncio
 from .logger import logger
 from .config import Config
 from .socks4 import SOCKS4Handler
@@ -33,9 +33,4 @@ class SOCKSServer:
                 pass
 
     async def start_server(self):
-        self.server = await start_server(self.handle, self.config.bind)
-
-    def serve(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.start_server())
-        serve_forever([self.server], loop, 'socks:')
+        self.server = await start_server_asyncio(self.handle, self.config.bind, 'socks:')
