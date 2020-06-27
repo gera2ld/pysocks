@@ -20,10 +20,11 @@ $ pip3 install gera2ld.socks
 
   or python script:
   ``` python
+  from gera2ld.pyserve import run_forever
   from gera2ld.socks.server import Config, SOCKSServer
 
   config = Config('127.0.0.1:1080')
-  SOCKSServer(config).serve()
+  run_forever(SOCKSServer(config).start_server())
   ```
 
 * SOCKS client
