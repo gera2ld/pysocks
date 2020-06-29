@@ -52,6 +52,8 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
         elif addr_type == 4:
             # IPv6
             host = socket.inet_ntop(socket.AF_INET6, (await self.reader.readexactly(16)))
+        else:
+            raise SOCKSError(f'Invalid addr_type: {addr_type}')
         port, = struct.unpack('!H', (await self.reader.readexactly(2)))
         self.addr = host, port
         logger.debug('hand_shake v5: %s %s:%d', command, host, port)
