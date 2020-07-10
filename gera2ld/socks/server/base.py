@@ -154,19 +154,19 @@ class BaseHandler:
         if name and error is None:
             handle = getattr(self, 'socks_' + name, None)
         data_len_out = data_len_in = '-'
-        if handle is not None:
-            try:
-                data_len_in, data_len_out = await handle()
-            except Exception as e:
-                # TODO net error
-                error = str(e)
-                logger.debug(type(e))
-                import traceback
-                traceback.print_exc()
-                self.reply(self.code_rejected)
-        else:
-            self.reply(self.code_not_supported)
-        logger.info('%s:%d -> %s:%d TCP %s/%s %s/in %s/out (%s)',
+        try:
+            if handle is not None:
+                try:
+                    data_len_in, data_len_out = await handle()
+                except asyncio.IncompleteReadError:
+                    pass
+                except:
+                    self.reply(self.code_rejected)
+                    raise
+            else:
+                self.reply(self.code_not_supported)
+        finally:
+            logger.info('%s:%d -> %s:%d TCP %s/%s %s/in %s/out (%s)',
                 *self.client_addr,
                 self.addr[0], self.addr[1], self.version, name,
                 data_len_in, data_len_out, error or '-')

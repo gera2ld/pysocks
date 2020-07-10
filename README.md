@@ -1,5 +1,7 @@
 # gera2ld.socks
 
+[![PyPI](https://img.shields.io/pypi/v/gera2ld.socks.svg)](https://pypi.org/project/gera2ld.socks/)
+
 This is a SOCKS server and client package built with `asyncio` (requires Python 3.5+).
 
 ## Installation
