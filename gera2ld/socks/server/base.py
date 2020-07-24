@@ -38,18 +38,10 @@ class BaseHandler:
         self.addr = '-', 0
 
     async def hand_shake(self):
-        '''
-        MUST be implemented in sub classes.
-        Read protocol specific bytes and parse address, command, etc.
-        '''
-        raise NotImplemented
+        raise NotImplementedError
 
     def reply(self, code, addr=None):
-        '''
-        MUST be implemented in sub classes.
-        The address will be packed and sent to self.writer.
-        '''
-        raise NotImplemented
+        raise NotImplementedError
 
     async def forward_data(self, trans_remote):
         data_len = 0

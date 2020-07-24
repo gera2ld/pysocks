@@ -2,8 +2,19 @@
 # coding=utf-8
 import inspect
 from .logger import logger
-from .proxy import ProxyResult, ProxyPicker, RandomPicker
 from ..utils import SOCKSProxy
+
+def check_hostnames(rules):
+    def check(host, port, hostname):
+        for rule in rules:
+            if rule.startswith('*.'):
+                if hostname == rule[2:] or hostname.endswith(rule[1:]):
+                    return True
+            else:
+                if hostname == rule:
+                    return True
+        return False
+    return check
 
 class Config:
     bufsize = 4096
@@ -14,8 +25,6 @@ class Config:
         self.socks5methods = 0,
         self.bind = bind
         self.set_proxies()
-        self.proxy_pickers = []
-        self.add_picker(RandomPicker)
         self.remote_dns = remote_dns
 
     def set_user(self, user, pwd=None):
@@ -30,30 +39,19 @@ class Config:
     def authenticate(self, user, pwd):
         return self.users.get(user) == pwd
 
-    def set_proxies(self, proxies=None):
-        if proxies is None:
-            # None represents direct connection
-            self.proxies = [None]
-            return
-        proxies_set = set()
-        for proxy in proxies:
-            if proxy is None:
-                proxies_set.add(proxy)
-                continue
-            proxy = SOCKSProxy(proxy)
-            proxies_set.add(proxy)
-        self.proxies = list(proxies_set)
-
-    def add_picker(self, picker=None):
-        if inspect.isclass(picker) and issubclass(picker, ProxyPicker):
-            ins = picker()
-        elif isinstance(picker, ProxyPicker):
-            ins = picker
-        else:
-            logger.warn('Invalid proxy picker: %s', picker)
-            return
-        self.proxy_pickers.append(ins)
-        self.proxy_pickers.sort(key=lambda picker: picker.priority, reverse=True)
+    def set_proxies(self, proxies=[]):
+        normalized = []
+        for test, proxy in proxies:
+            if isinstance(proxy, str):
+                proxy = SOCKSProxy(proxy)
+            assert proxy is None or isinstance(proxy, SOCKSProxy)
+            if isinstance(test, str):
+                test = check_hostnames([test])
+            assert test is None or callable(test)
+            normalized.append((test, proxy))
+        self.proxies = normalized
 
     def get_proxy(self, host, port, hostname):
-        return ProxyResult.get(self.proxies, self.proxy_pickers, host, port, hostname)
+        for test, proxy in self.proxies:
+            if test is None or test(host, port, hostname):
+                return proxy
