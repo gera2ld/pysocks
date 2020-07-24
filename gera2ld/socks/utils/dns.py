@@ -10,7 +10,7 @@ def set_resolver(_resolver=None):
     global resolver
     resolver = _resolver or ProxyResolver(proxies=[
         (None, os.environ.get('GERA2LD_SOCKS_NAMESERVER', '114.114.114.114').split(',')),
-    ], protocol=TCP)
+    ])
 
 def is_ip(host):
     try:

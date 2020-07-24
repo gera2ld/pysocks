@@ -19,7 +19,7 @@ def check_hostnames(rules):
 class Config:
     bufsize = 4096
 
-    def __init__(self, bind='127.0.0.1:1080', remote_dns=False):
+    def __init__(self, bind='127.0.0.1:1080', remote_dns=True):
         self.users = {}
         self.versions = {5}
         self.socks5methods = 0,

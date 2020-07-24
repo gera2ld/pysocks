@@ -56,13 +56,17 @@ class BaseHandler:
 
     async def handle_connect_direct(self):
         loop = asyncio.get_event_loop()
-        return await loop.create_connection(lambda : SOCKSConnect(self.writer), *self.addr)
+        host, port = self.addr
+        if self.config.remote_dns:
+            # Resolve host here since there is no remote proxy
+            host = await get_host(host)
+        return await loop.create_connection(lambda : SOCKSConnect(self.writer), host, port)
 
     async def handle_connect(self):
         host, port = self.addr
-        hostname = None
+        hostname = host
         if not self.config.remote_dns:
-            hostname = host
+            # Resolve host only if remote_dns is False
             host = await get_host(host)
         self.remote_addr = host, port
         proxy = self.config.get_proxy(host=host, port=port, hostname=hostname)
