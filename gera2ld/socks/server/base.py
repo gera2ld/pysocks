@@ -1,8 +1,6 @@
 # coding=utf-8
 import asyncio
 import struct
-from gera2ld.pyserve import Host
-from .logger import logger
 from ..client import create_client
 from ..utils import ProtocolMixIn, get_host, SOCKSError, EMPTY_ADDR
 
@@ -68,7 +66,6 @@ class BaseHandler:
         if not self.config.remote_dns:
             # Resolve host only if remote_dns is False
             host = await get_host(host)
-        self.remote_addr = host, port
         proxy = self.config.get_proxy(host=host, port=port, hostname=hostname)
         if proxy is None:
             return await self.handle_connect_direct()
@@ -89,12 +86,12 @@ class BaseHandler:
                 import traceback
                 traceback.print_exc()
             self.reply(self.code_rejected, EMPTY_ADDR)
-            data_len_out = data_len_in = '-'
+            len_local = len_remote = '-'
         else:
             self.reply(self.code_granted, trans_remote.get_extra_info('sockname'))
-            data_len_out = await self.forward_data(trans_remote)
-            data_len_in = prot_remote.data_len
-        return data_len_in, data_len_out
+            len_local = await self.forward_data(trans_remote)
+            len_remote = prot_remote.data_len
+        return len_local, len_remote
 
     async def get_bind_connection(self, timeout=3):
         def connection_made(transport):
@@ -115,7 +112,7 @@ class BaseHandler:
             raise e
 
     async def socks_bind(self):
-        data_len_out = data_len_in = '-'
+        len_local = len_remote = '-'
         try:
             trans_remote, prot_remote = await self.get_bind_connection()
         except:
@@ -124,11 +121,11 @@ class BaseHandler:
             dest_addr = trans_remote.get_extra_info('peername')
             if dest_addr[0] == self.addr[0]:
                 self.reply(self.code_granted, dest_addr)
-                data_len_out = await self.forward_data(trans_remote)
-                data_len_in = prot_remote.data_len
+                len_local = await self.forward_data(trans_remote)
+                len_remote = prot_remote.data_len
             else:
                 self.reply(self.code_rejected, dest_addr)
-        return data_len_in, data_len_out
+        return len_local, len_remote
 
     async def handle(self):
         command = None
@@ -142,11 +139,11 @@ class BaseHandler:
         handle = None
         if name and error is None:
             handle = getattr(self, 'socks_' + name, None)
-        data_len_out = data_len_in = '-'
+        len_local = len_remote = '-'
         try:
             if handle is not None:
                 try:
-                    data_len_in, data_len_out = await handle()
+                    len_local, len_remote = await handle()
                 except asyncio.IncompleteReadError:
                     pass
                 except:
@@ -154,10 +151,6 @@ class BaseHandler:
                     raise
             else:
                 self.reply(self.code_not_supported)
-        finally:
-            logger.info('%s -> %s %s/%s %s/in %s/out (%s)',
-                Host(self.client_addr).host,
-                Host(self.addr).host,
-                self.version, name,
-                data_len_in, data_len_out, error or '-')
-
+        except:
+            pass
+        return name, len_local, len_remote, error

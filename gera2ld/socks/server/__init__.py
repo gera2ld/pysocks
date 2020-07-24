@@ -1,8 +1,9 @@
 import asyncio
-from gera2ld.pyserve import start_server_asyncio
+from gera2ld.pyserve import start_server_asyncio, Host
 from .socks4 import SOCKS4Handler
 from .socks5 import SOCKS5Handler
 from .udp import UDPRelayServer
+from .logger import logger
 
 class SOCKSServer:
     handlers = {
@@ -24,12 +25,16 @@ class SOCKSServer:
             await self.handle_version(reader, writer, version)
 
     async def handle_version(self, reader, writer, version):
-        if version in self.config.versions:
-            handler = self.handlers.get(version)
-        else:
-            handler = None
-        if handler is not None:
-            await handler(reader, writer, self.config, self.udp_server).handle()
+        Handler = self.handlers.get(version) if version in self.config.versions else None
+        if Handler is not None:
+            handler = Handler(reader, writer, self.config, self.udp_server)
+            name, len_local, len_remote, error = await handler.handle()
+            logger.info('%s->%s %s@%d <%s >%s %s',
+                Host(handler.client_addr).host,
+                Host(handler.addr).host,
+                name, handler.version,
+                len_local, len_remote, error or '-')
+
 
     async def start_server(self):
         self.tcp_server = await start_server_asyncio(self.handle, self.config.bind, 'tcp:')
