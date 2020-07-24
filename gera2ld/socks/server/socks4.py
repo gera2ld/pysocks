@@ -3,7 +3,7 @@
 import struct, socket, io
 from .base import BaseHandler
 from ..utils import SOCKS4MixIn
-from . import logger
+from .logger import logger
 
 class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
     '''
@@ -23,9 +23,10 @@ class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
             buf.write(byte)
         return buf.getvalue()
 
-    def reply_address(self, address = None):
+    def reply(self, code, addr=None):
+        self.writer.write(struct.pack('BB', self.reply_flag, code))
         # address must be IPv4
-        self.writer.write(self.pack_address(address))
+        self.writer.write(self.pack_address(addr))
 
     async def hand_shake(self):
         command, port = struct.unpack('!BH', (await self.reader.readexactly(3)))

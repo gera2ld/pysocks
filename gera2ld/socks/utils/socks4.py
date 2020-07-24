@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import struct, socket
+from .base import EMPTY_ADDR
 
 class SOCKS4MixIn:
     version = 4
@@ -11,5 +12,5 @@ class SOCKS4MixIn:
 
     def pack_address(self, address = None):
         # pack_address should be unblocked so `address` MUST be (IPv4, port)
-        addr = address or ('0.0.0.0', 0)
+        addr = address or EMPTY_ADDR
         return struct.pack('!H4s', addr[1], socket.inet_aton(addr[0]))

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding=utf-8
 import struct, socket
+from .base import EMPTY_ADDR
 
 class SOCKS5MixIn:
     version = 5
@@ -11,17 +12,16 @@ class SOCKS5MixIn:
 
     def pack_address(self, address = None):
         if address is None:
-            address = '0.0.0.0', 0
+            address = EMPTY_ADDR
         host, port = address[:2]
         # IPv6
         if ':' in host:
-            return struct.pack('!BB16sH', 0, 4, socket.inet_pton(socket.AF_INET6, host), port)
+            return struct.pack('!B16sH', 4, socket.inet_pton(socket.AF_INET6, host), port)
         # IPv4
         try:
             # IP address
-            return struct.pack('!BB4sH', 0, 1, socket.inet_aton(host), port)
+            return struct.pack('!B4sH', 1, socket.inet_aton(host), port)
         except:
             # Hostname
             host = host.encode()
-            length = len(host)
-            return struct.pack('!BBB%dsH' % length, 0, 3, length, host, port)
+            return struct.pack('!BB', 3, len(host)) + host + struct.pack('!H', port)

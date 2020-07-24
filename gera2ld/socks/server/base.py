@@ -1,9 +1,10 @@
-#!/usr/bin/env python
 # coding=utf-8
-import asyncio, struct
-from . import logger
+import asyncio
+import struct
+from gera2ld.pyserve import Host
+from .logger import logger
 from ..client import create_client
-from ..utils import ProtocolMixIn, get_host
+from ..utils import ProtocolMixIn, get_host, SOCKSError, EMPTY_ADDR
 
 class SOCKSConnect(ProtocolMixIn, asyncio.Protocol):
     def connection_made(self, transport):
@@ -18,11 +19,6 @@ class SOCKSConnect(ProtocolMixIn, asyncio.Protocol):
         self.data_len += len(data)
         self.writer.write(data)
 
-class SOCKSError(Exception):
-    def __init__(self, message):
-        super().__init__()
-        self.message = message
-
 class BaseHandler:
     '''
     Base handler of SOCKS protocol
@@ -31,21 +27,15 @@ class BaseHandler:
     `reply_address` must be implemented in subclasses.
     '''
     commands = {}
-    empty_addr = '0.0.0.0', 0
 
-    def __init__(self, reader, writer, config):
+    def __init__(self, reader, writer, config, udp_server):
         self.reader = reader
         self.writer = writer
         self.config = config
+        self.udp_server = udp_server
         self.client_addr = writer.transport.get_extra_info('peername')[:2]
+        self.server_addr = writer.transport.get_extra_info('sockname')[:2]
         self.addr = '-', 0
-
-    def reply_address(self, address = None):
-        '''
-        MUST be implemented in sub classes.
-        The address will be packed and sent to self.writer.
-        '''
-        raise NotImplemented
 
     async def hand_shake(self):
         '''
@@ -54,9 +44,12 @@ class BaseHandler:
         '''
         raise NotImplemented
 
-    def reply(self, code, addr = None):
-        self.writer.write(struct.pack('BB', self.reply_flag, code))
-        self.reply_address(addr)
+    def reply(self, code, addr=None):
+        '''
+        MUST be implemented in sub classes.
+        The address will be packed and sent to self.writer.
+        '''
+        raise NotImplemented
 
     async def forward_data(self, trans_remote):
         data_len = 0
@@ -99,7 +92,7 @@ class BaseHandler:
             else:
                 import traceback
                 traceback.print_exc()
-            self.reply(self.code_rejected, self.empty_addr)
+            self.reply(self.code_rejected, EMPTY_ADDR)
             data_len_out = data_len_in = '-'
         else:
             self.reply(self.code_granted, trans_remote.get_extra_info('sockname'))
@@ -130,7 +123,7 @@ class BaseHandler:
         try:
             trans_remote, prot_remote = await self.get_bind_connection()
         except:
-            self.reply(self.code_rejected, self.empty_addr)
+            self.reply(self.code_rejected, EMPTY_ADDR)
         else:
             dest_addr = trans_remote.get_extra_info('peername')
             if dest_addr[0] == self.addr[0]:
@@ -166,8 +159,9 @@ class BaseHandler:
             else:
                 self.reply(self.code_not_supported)
         finally:
-            logger.info('%s:%d -> %s:%d TCP %s/%s %s/in %s/out (%s)',
-                *self.client_addr,
-                self.addr[0], self.addr[1], self.version, name,
+            logger.info('%s -> %s %s/%s %s/in %s/out (%s)',
+                Host(self.client_addr).host,
+                Host(self.addr).host,
+                self.version, name,
                 data_len_in, data_len_out, error or '-')
 

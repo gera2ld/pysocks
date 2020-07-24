@@ -2,6 +2,7 @@
 # coding=utf-8
 import unittest, asyncio, io
 from gera2ld.socks.server import SOCKSServer, SOCKS4Handler, SOCKS5Handler
+from gera2ld.socks.server.config import Config
 from gera2ld.socks.server.base import SOCKSConnect, BaseHandler
 
 SOCKS4Connect = b'\4\1\0P\1\2\3\4\0'
@@ -47,7 +48,7 @@ def wrap_class(cls, callback):
 class TestBootstrap(unittest.TestCase):
 
     def setUp(self):
-        self.server = SOCKSServer()
+        self.server = SOCKSServer(Config())
         self.server.config.versions.update((4, 5))
         self.server.handlers = dict(map(lambda item: (item[0], wrap_class(item[1], self.hook_handler)), self.server.handlers.items()))
 
@@ -108,7 +109,7 @@ class TestBootstrap(unittest.TestCase):
 class TestConnect(unittest.TestCase):
 
     def setUp(self):
-        self.server = SOCKSServer()
+        self.server = SOCKSServer(Config())
         self.server.config.versions.update((4, 5))
         self.server.handlers = dict(map(lambda item: (item[0], wrap_class(item[1], self.hook_handler)), self.server.handlers.items()))
 

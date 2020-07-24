@@ -3,7 +3,7 @@
 import struct, asyncio, socket
 from .base import BaseHandler, SOCKSError
 from ..utils import SOCKS5MixIn
-from . import logger
+from .logger import logger
 
 class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
     '''
@@ -15,8 +15,9 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
         3: 'udp',
     }
 
-    def reply_address(self, address=None):
-        self.writer.write(self.pack_address(address))
+    def reply(self, code, addr=None):
+        self.writer.write(struct.pack('BBB', self.reply_flag, code, 0))
+        self.writer.write(self.pack_address(addr))
 
     async def hand_shake(self):
         length, = struct.unpack('B', (await self.reader.readexactly(1)))
@@ -58,3 +59,15 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
         self.addr = host, port
         logger.debug('hand_shake v5: %s %s:%d', command, host, port)
         return command
+
+    async def socks_udp(self):
+        local_peer, remote_peer = await self.udp_server.add_client(self.client_addr[0])
+        self.addr = local_peer.local_addr
+        self.reply(self.code_granted, local_peer.local_addr)
+        while True:
+            data = await self.reader.read(self.config.bufsize)
+            if not data:
+                break
+        local_peer.close()
+        remote_peer.close()
+        return local_peer.len, remote_peer.len

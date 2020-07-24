@@ -54,3 +54,19 @@ $ pip3 install gera2ld.socks
   r = opener.open('https://www.example.com')
   print(r.read().decode())
   ```
+
+* SOCKS client for UDP
+
+  ``` python
+  import asyncio
+  from gera2ld.socks.client import create_client
+
+  async def main():
+      client = create_client('socks5://127.0.0.1:1080')
+      udp = await client.handle_udp()
+      udp.write_data(b'\xc9\xa7\x01\x00\x00\x01\x00\x00\x00\x00\x00\x00\x03www\x06google\x03com\x00\x00\xff\x00\x01', ('114.114.114.114', 53))
+      print(await udp.results.get())
+
+  loop = asyncio.get_event_loop()
+  loop.run_until_complete(main())
+  ```

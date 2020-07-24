@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# coding=utf-8
 import unittest, asyncio, io, functools
 from gera2ld.socks.client import SOCKS4Client, SOCKS5Client
 from gera2ld.socks.client.base import ClientProtocol

@@ -1,10 +1,10 @@
-#!/usr/bin/env python
-# coding=utf-8
 import argparse
 import logging
 import os
 from gera2ld.pyserve import run_forever
-from . import SOCKSServer, logger, Config
+from . import SOCKSServer
+from .logger import logger
+from .config import Config
 from .proxy import SkipPicker
 
 logger.setLevel(os.environ.get('LOGLEVEL') or logging.INFO)

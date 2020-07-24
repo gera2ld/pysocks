@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # coding=utf-8
 import struct, socket
+from ..utils import SOCKS5MixIn, get_host, EMPTY_ADDR
 from .base import BaseClient
-from ..utils import SOCKS5MixIn, get_host
+from .udp import UDPClient
 
 class SOCKS5Client(BaseClient, SOCKS5MixIn):
     '''
@@ -34,7 +35,7 @@ class SOCKS5Client(BaseClient, SOCKS5MixIn):
             assert ret == 0, 'Authentication failed'
         if not self.remote_dns:
             addr = (await get_host(addr[0])), addr[1]
-        data = struct.pack('BB', self.version, command) + self.pack_address(addr)
+        data = struct.pack('BBB', self.version, command, 0) + self.pack_address(addr)
         self.writer.write(data)
 
     async def get_address(self):
@@ -51,3 +52,11 @@ class SOCKS5Client(BaseClient, SOCKS5MixIn):
             host = socket.inet_ntop(socket.AF_INET6, await self.reader.readexactly(16))
         port, = struct.unpack('!H', await self.reader.readexactly(2))
         return host, port
+
+    async def handle_udp(self):
+        await self.handle_connect_proxy()
+        await self.hand_shake(3, EMPTY_ADDR)
+        await self.get_reply()
+        client = UDPClient(self.proxy_addr)
+        await client.initialize()
+        return client
