@@ -21,7 +21,10 @@ class SOCKSServer:
             version, = await reader.readexactly(1)
         except asyncio.IncompleteReadError:
             writer.close()
-            return
+        else:
+            await self.handle_version(reader, writer, version)
+
+    async def handle_version(self, reader, writer, version):
         if version in self.config.versions:
             handler = self.handlers.get(version)
         else:
