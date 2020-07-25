@@ -86,7 +86,7 @@ class BaseHandler:
                 import traceback
                 traceback.print_exc()
             self.reply(self.code_rejected, EMPTY_ADDR)
-            len_local = len_remote = '-'
+            len_local = len_remote = -1
         else:
             self.reply(self.code_granted, trans_remote.get_extra_info('sockname'))
             len_local = await self.forward_data(trans_remote)
@@ -112,7 +112,7 @@ class BaseHandler:
             raise e
 
     async def socks_bind(self):
-        len_local = len_remote = '-'
+        len_local = len_remote = -1
         try:
             trans_remote, prot_remote = await self.get_bind_connection()
         except:
@@ -139,7 +139,7 @@ class BaseHandler:
         handle = None
         if name and error is None:
             handle = getattr(self, 'socks_' + name, None)
-        len_local = len_remote = '-'
+        len_local = len_remote = -1
         try:
             if handle is not None:
                 try:

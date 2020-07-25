@@ -29,7 +29,7 @@ class SOCKSServer:
         if Handler is not None:
             handler = Handler(reader, writer, self.config, self.udp_server)
             name, len_local, len_remote, error = await handler.handle()
-            logger.info('%s->%s %s@%d <%s >%s %s',
+            logger.info('%s->%s %s@%d <%d >%d %s',
                 Host(handler.client_addr).host,
                 Host(handler.addr).host,
                 name, handler.version,
