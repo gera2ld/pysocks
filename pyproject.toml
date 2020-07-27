@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gera2ld.socks"
-version = "0.3.0"
+version = "0.4.0"
 description = "SOCKS client and server based on asyncio"
 authors = ["Gerald <gera2ld@163.com>"]
 license = "MIT"
@@ -11,7 +11,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.7"
 gera2ld-pyserve = "^0.3.0"
 async_dns = "^1.0.10"
 
