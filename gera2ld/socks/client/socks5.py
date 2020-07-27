@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-# coding=utf-8
 import struct, socket
 from ..utils import SOCKS5MixIn, get_host, EMPTY_ADDR
 from .base import BaseClient
 from .udp import UDPClient
 
-class SOCKS5Client(BaseClient, SOCKS5MixIn):
+class SOCKS5Client(SOCKS5MixIn, BaseClient):
     '''
     SOCKS5 client
     '''
@@ -13,23 +11,23 @@ class SOCKS5Client(BaseClient, SOCKS5MixIn):
         super().__init__(addr, remote_dns)
         self.auth = auth
         self.methods = [0]
-        if auth:
-            # validate auth info
+        if auth is not None:
             user, pwd = auth
+            assert isinstance(user, str) and isinstance(pwd, str)
             self.methods.append(2)
 
-    async def hand_shake(self, command, addr):
-        l = len(self.methods)
-        self.writer.write(struct.pack('B%dB' % l, l, *self.methods))
+    async def shake_hand(self, command, addr):
+        self.writer.write(bytes([len(self.methods), *self.methods]))
+        await self.writer.drain()
         version, method = struct.unpack('BB', await self.reader.readexactly(2))
         assert version == 5, 'Version unmatched'
         assert method < 255, 'Method unsupported'
         if method == 2:
             user, pwd = self.auth
-            luser = len(user)
-            lpwd = len(pwd)
-            data = struct.pack('BB%dsB%ds' % (luser, lpwd), 1, luser, user.encode(), lpwd, pwd.encode())
-            self.writer.write(data)
+            buser = user.encode()
+            bpwd = pwd.encode()
+            self.writer.write(bytes([1, len(buser), *buser, len(bpwd), *bpwd]))
+            await self.writer.drain()
             _, ret = struct.unpack('BB', await self.reader.readexactly(2))
             assert _ == 1
             assert ret == 0, 'Authentication failed'
@@ -37,8 +35,9 @@ class SOCKS5Client(BaseClient, SOCKS5MixIn):
             addr = (await get_host(addr[0])), addr[1]
         data = struct.pack('BBB', self.version, command, 0) + self.pack_address(addr)
         self.writer.write(data)
+        await self.writer.drain()
 
-    async def get_address(self):
+    async def load_address(self):
         _, addr_type = struct.unpack('BB', await self.reader.readexactly(2))
         if addr_type == 1:
             # IPv4
@@ -54,9 +53,9 @@ class SOCKS5Client(BaseClient, SOCKS5MixIn):
         return host, port
 
     async def handle_udp(self):
-        await self.handle_connect_proxy()
-        await self.hand_shake(3, EMPTY_ADDR)
-        await self.get_reply()
+        await self._connect()
+        await self.shake_hand(3, EMPTY_ADDR)
+        await self.load_reply()
         client = UDPClient(self.proxy_addr)
         await client.initialize()
         return client

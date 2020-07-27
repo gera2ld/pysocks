@@ -1,11 +1,11 @@
-#!/usr/bin/env python
-# coding=utf-8
-import struct, asyncio, socket
+import asyncio
+import socket
+import struct
+from ..utils import SOCKS5MixIn, forward_data
 from .base import BaseHandler, SOCKSError
-from ..utils import SOCKS5MixIn
 from .logger import logger
 
-class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
+class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
     '''
     SOCKS5 Handler
     '''
@@ -15,11 +15,12 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
         3: 'udp',
     }
 
-    def reply(self, code, addr=None):
+    async def reply(self, code, addr=None):
         self.writer.write(struct.pack('BBB', self.reply_flag, code, 0))
         self.writer.write(self.pack_address(addr))
+        await self.writer.drain()
 
-    async def hand_shake(self):
+    async def shake_hand(self):
         length, = struct.unpack('B', (await self.reader.readexactly(1)))
         for method in struct.unpack('B' * length, (await self.reader.readexactly(length))):
             if method in self.config.socks5methods:
@@ -28,6 +29,7 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
         else:
             method = self.method = 255
         self.writer.write(struct.pack('BB', self.version, method))
+        await self.writer.drain()
         if method == 255:
             raise SOCKSError('No supported method')
         if method == 2:
@@ -39,6 +41,7 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
             pwd = await self.reader.readexactly(length)
             code = 0 if self.config.authenticate(user, pwd) else 1
             self.writer.write(struct.pack('BB', 1, code))
+            await self.writer.drain()
             if code > 0:
                 raise SOCKSError('Invalid user or password')
         version, command, _, addr_type = struct.unpack('BBBB', (await self.reader.readexactly(4)))
@@ -57,17 +60,14 @@ class SOCKS5Handler(BaseHandler, SOCKS5MixIn):
             raise SOCKSError(f'Invalid addr_type: {addr_type}')
         port, = struct.unpack('!H', (await self.reader.readexactly(2)))
         self.addr = host, port
-        logger.debug('hand_shake v5: %s %s:%d', command, host, port)
+        logger.debug('shake_hand v5: %s %s:%d', command, host, port)
         return command
 
     async def socks_udp(self):
         local_peer, remote_peer = await self.udp_server.add_client(self.client_addr[0])
         self.addr = local_peer.local_addr
-        self.reply(self.code_granted, local_peer.local_addr)
-        while True:
-            data = await self.reader.read(self.config.bufsize)
-            if not data:
-                break
+        await self.reply(self.code_granted, local_peer.local_addr)
+        await forward_data(self.reader)
         local_peer.close()
         remote_peer.close()
         return local_peer.len, remote_peer.len

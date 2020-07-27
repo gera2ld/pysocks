@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-# coding=utf-8
-import struct, socket
+import socket
+import struct
 from .base import EMPTY_ADDR
 
 class SOCKS5MixIn:

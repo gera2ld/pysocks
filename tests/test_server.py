@@ -3,7 +3,7 @@
 import unittest, asyncio, io
 from gera2ld.socks.server import SOCKSServer, SOCKS4Handler, SOCKS5Handler
 from gera2ld.socks.server.config import Config
-from gera2ld.socks.server.base import SOCKSConnect, BaseHandler
+from gera2ld.socks.server.base import BaseHandler
 
 SOCKS4Connect = b'\4\1\0P\1\2\3\4\0'
 SOCKS5Connect = b'\5\1\0\5\1\0\1\1\2\3\4\0P'
@@ -11,26 +11,14 @@ BootstrapAddr = '1.2.3.4', 80
 TESTDATA = b'Hello world'
 
 class FakeWriter(io.BytesIO):
-    def __init__(self, transport=None):
-        super().__init__()
-        self.transport = transport or FakeTransport()
-
-class FakeTransport:
     SockAddr = '4.5.6.7', 8888
 
-    def __init__(self, protocol=None):
-        self.protocol = protocol
-        self.writer = FakeWriter(self)
-        if protocol:
-            protocol.connection_made(self)
+    async def drain(self):
+        pass
 
     def get_extra_info(self, key):
         if key in ('sockname', 'peername'):
             return self.SockAddr
-
-    def write(self, data):
-        self.writer.write(data)
-        self.protocol.data_received(data)
 
     def close(self):
         pass
@@ -50,42 +38,53 @@ class TestBootstrap(unittest.TestCase):
     def setUp(self):
         self.server = SOCKSServer(Config())
         self.server.config.versions.update((4, 5))
-        self.server.handlers = dict(map(lambda item: (item[0], wrap_class(item[1], self.hook_handler)), self.server.handlers.items()))
+        self.server.handlers = dict([
+            (key, wrap_class(Handler, self.hook_handler))
+            for key, Handler in self.server.handlers.items()
+        ])
+
+    async def handle_connect(self):
+        reader = asyncio.StreamReader()
+        writer = FakeWriter()
+        self.remote = reader, writer
+        return self.remote
+
+    def hook_handler(self, handler):
+        self.handler = handler
+        handler.handle_connect = self.handle_connect
 
     def tearDown(self):
         self.server = None
         self.handler = None
-
-    def hook_handler(self, handler):
-        self.handler = handler
-        async def noop():
-            return 0, 0
-        handler.socks_connect = noop
+        self.remote = None
 
     def test_socks4(self):
         reader = asyncio.StreamReader()
         reader.feed_data(SOCKS4Connect)
+        reader.feed_eof()
         writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.handler.get_class(), SOCKS4Handler)
         self.assertEqual(self.handler.addr, BootstrapAddr)
-        self.assertEqual(writer.getvalue(), b'')
+        self.assertEqual(writer.getvalue(), b'\x00Z"\xb8\x04\x05\x06\x07')
 
     def test_socks5(self):
         reader = asyncio.StreamReader()
         reader.feed_data(SOCKS5Connect)
+        reader.feed_eof()
         writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.handler.get_class(), SOCKS5Handler)
         self.assertEqual(self.handler.addr, BootstrapAddr)
-        self.assertEqual(writer.getvalue(), b'\5\0')
+        self.assertEqual(writer.getvalue(), b'\x05\x00\x05\x00\x00\x01\x04\x05\x06\x07"\xb8')
 
     def test_socks5auth(self):
         self.server.config.set_user('hello', 'world')
         reader = asyncio.StreamReader()
         reader.feed_data(SOCKS5Connect)
+        reader.feed_eof()
         writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
@@ -102,30 +101,35 @@ class TestBootstrap(unittest.TestCase):
         )
         reader = asyncio.StreamReader()
         reader.feed_data(b'\5\1\2\1\5hello\5world\5\1\0\1\1\2\3\4\0P')
+        reader.feed_eof()
         writer = FakeWriter()
         loop.run_until_complete(self.server.handle(reader, writer))
-        self.assertEqual(writer.getvalue(), b'\5\2\1\0')
+        self.assertEqual(writer.getvalue(), b'\x05\x02\x01\x00\x05\x00\x00\x01\x04\x05\x06\x07"\xb8')
 
 class TestConnect(unittest.TestCase):
 
     def setUp(self):
         self.server = SOCKSServer(Config())
         self.server.config.versions.update((4, 5))
-        self.server.handlers = dict(map(lambda item: (item[0], wrap_class(item[1], self.hook_handler)), self.server.handlers.items()))
+        self.server.handlers = dict([
+            (key, wrap_class(Handler, self.hook_handler))
+            for key, Handler in self.server.handlers.items()
+        ])
 
-    def tearDown(self):
-        self.server = None
-        self.handler = None
-        self.trans = None
+    async def handle_connect(self):
+        reader = asyncio.StreamReader()
+        writer = FakeWriter()
+        self.remote = reader, writer
+        return self.remote
 
     def hook_handler(self, handler):
         self.handler = handler
         handler.handle_connect = self.handle_connect
 
-    async def handle_connect(self):
-        proto = SOCKSConnect(self.handler.writer)
-        self.trans = FakeTransport(proto)
-        return self.trans, proto
+    def tearDown(self):
+        self.server = None
+        self.handler = None
+        self.remote = None
 
     def test_socks4(self):
         reader = asyncio.StreamReader()
@@ -135,8 +139,8 @@ class TestConnect(unittest.TestCase):
         writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
-        self.assertEqual(self.trans.writer.getvalue(), TESTDATA)
-        self.assertEqual(writer.getvalue(), b'\0Z"\xb8\4\5\6\7' + TESTDATA)
+        self.assertEqual(self.remote[1].getvalue(), TESTDATA)
+        self.assertEqual(writer.getvalue(), b'\0Z"\xb8\4\5\6\7')
 
     def test_socks5(self):
         reader = asyncio.StreamReader()
@@ -146,5 +150,5 @@ class TestConnect(unittest.TestCase):
         writer = FakeWriter()
         loop = asyncio.get_event_loop()
         loop.run_until_complete(self.server.handle(reader, writer))
-        self.assertEqual(self.trans.writer.getvalue(), TESTDATA)
-        self.assertEqual(writer.getvalue(), b'\5\0\5\0\0\1\4\5\6\7"\xb8' + TESTDATA)
+        self.assertEqual(self.remote[1].getvalue(), TESTDATA)
+        self.assertEqual(writer.getvalue(), b'\5\0\5\0\0\1\4\5\6\7"\xb8')

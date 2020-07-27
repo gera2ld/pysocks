@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding=utf-8
-import inspect
 from .logger import logger
 from ..utils import SOCKSProxy
 
@@ -17,8 +14,6 @@ def check_hostnames(rules):
     return check
 
 class Config:
-    bufsize = 4096
-
     def __init__(self, bind='127.0.0.1:1080', remote_dns=True):
         self.users = {}
         self.versions = {5}

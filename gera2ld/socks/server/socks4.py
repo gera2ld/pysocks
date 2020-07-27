@@ -1,11 +1,11 @@
-#!/usr/bin/env python
-# coding=utf-8
-import struct, socket, io
-from .base import BaseHandler
+import io
+import socket
+import struct
 from ..utils import SOCKS4MixIn
+from .base import BaseHandler
 from .logger import logger
 
-class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
+class SOCKS4Handler(SOCKS4MixIn, BaseHandler):
     '''
     SOCKS4 Handler
     '''
@@ -14,31 +14,23 @@ class SOCKS4Handler(BaseHandler, SOCKS4MixIn):
         2: 'bind',
     }
 
-    async def read_until_null(self):
-        buf = io.BytesIO()
-        while True:
-            byte = await self.reader.readexactly(1)
-            if byte == b'\0':
-                break
-            buf.write(byte)
-        return buf.getvalue()
-
-    def reply(self, code, addr=None):
+    async def reply(self, code, addr=None):
         self.writer.write(struct.pack('BB', self.reply_flag, code))
         # address must be IPv4
         self.writer.write(self.pack_address(addr))
+        await self.writer.drain()
 
-    async def hand_shake(self):
+    async def shake_hand(self):
         command, port = struct.unpack('!BH', (await self.reader.readexactly(3)))
         ip = await self.reader.readexactly(4)
         ipn, = struct.unpack('!I', ip)
         # SOCKS4a supports domain names by given IP 0.0.0.x (x > 0)
         socks4a = ipn < 256
-        userid = await self.read_until_null()
+        userid = (await self.reader.readuntil(b'\0'))[:-1]
         if socks4a:
-            host = await self.read_until_null()
+            host = (await self.reader.readuntil(b'\0'))[:-1]
         else:
             host = socket.inet_ntoa(ip)
         self.addr = host, port
-        logger.debug('hand_shake v4: %s %s:%d', command, host, port)
+        logger.debug('shake_hand v4: %s %s:%d', command, host, port)
         return command

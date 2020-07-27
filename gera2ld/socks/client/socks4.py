@@ -1,10 +1,10 @@
-#!/usr/bin/env python
-# coding=utf-8
-import socket, struct, asyncio
-from .base import BaseClient
+import asyncio
+import socket
+import struct
 from ..utils import SOCKS4MixIn, get_host
+from .base import BaseClient
 
-class SOCKS4Client(BaseClient, SOCKS4MixIn):
+class SOCKS4Client(SOCKS4MixIn, BaseClient):
     '''
     SOCKS4 client
     '''
@@ -12,7 +12,7 @@ class SOCKS4Client(BaseClient, SOCKS4MixIn):
         super().__init__(addr, remote_dns)
         self.userid = userid.strip('\0')
 
-    async def hand_shake(self, command, addr):
+    async def shake_hand(self, command, addr):
         hostname = addr[0]
         # SOCKS4a
         remote_dns = self.remote_dns
@@ -28,8 +28,9 @@ class SOCKS4Client(BaseClient, SOCKS4MixIn):
         if remote_dns:
             data += hostname.encode() + b'\0'
         self.writer.write(data)
+        await self.writer.drain()
 
-    async def get_address(self):
+    async def load_address(self):
         port, = struct.unpack('!H', await self.reader.readexactly(2))
         ipn = await self.reader.readexactly(4)
         ip = socket.inet_ntoa(ipn)
