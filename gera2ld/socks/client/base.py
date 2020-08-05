@@ -33,8 +33,18 @@ class BaseClient:
         self.proxy_addr = await self.load_address()
 
     async def handle_connect(self, addr):
-        await self._connect()
-        self.writer.write(struct.pack('B', self.version))
-        await self.writer.drain()
-        await self.shake_hand(1, addr)
-        await self.load_reply()
+        try:
+            await self._connect()
+            self.writer.write(struct.pack('B', self.version))
+            await self.writer.drain()
+            await self.shake_hand(1, addr)
+            await self.load_reply()
+        except:
+            self.close()
+            raise
+
+    def close(self):
+        if self.writer is not None:
+            self.writer.close()
+            self.reader = None
+            self.writer = None
