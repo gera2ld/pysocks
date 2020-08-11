@@ -70,4 +70,4 @@ class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
         await forward_data(self.reader)
         local_peer.close()
         remote_peer.close()
-        return local_peer.len, remote_peer.len
+        return local_peer.len, remote_peer.len, None

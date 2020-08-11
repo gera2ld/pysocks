@@ -62,10 +62,11 @@ class BaseHandler:
                 traceback.print_exc()
             await self.reply(self.code_rejected, EMPTY_ADDR)
             len_local = len_remote = -1
+            exc = e
         else:
             await self.reply(self.code_granted, remote_writer.get_extra_info('sockname'))
-            len_local, len_remote = await forward_pipes(self.reader, self.writer, remote_reader, remote_writer)
-        return len_local, len_remote
+            len_local, len_remote, exc = await forward_pipes(self.reader, self.writer, remote_reader, remote_writer)
+        return len_local, len_remote, exc
 
     async def get_bind_connection(self, timeout=3):
         async def handle_bind(reader, writer):
@@ -81,6 +82,7 @@ class BaseHandler:
 
     async def socks_bind(self):
         len_local = len_remote = -1
+        exc = None
         try:
             remote_reader, remote_writer = await self.get_bind_connection()
         except Exception as e:
@@ -90,14 +92,15 @@ class BaseHandler:
                 import traceback
                 traceback.print_exc()
             await self.reply(self.code_rejected, EMPTY_ADDR)
+            exc = e
         else:
             dest_addr = remote_writer.get_extra_info('peername')
             if dest_addr[0] == self.addr[0]:
                 await self.reply(self.code_granted, dest_addr)
-                len_local, len_remote = await forward_pipes(self.reader, self.writer, remote_reader, remote_writer)
+                len_local, len_remote, exc = await forward_pipes(self.reader, self.writer, remote_reader, remote_writer)
             else:
                 await self.reply(self.code_rejected, dest_addr)
-        return len_local, len_remote
+        return len_local, len_remote, exc
 
     async def handle(self):
         command = None
@@ -114,11 +117,10 @@ class BaseHandler:
         len_local = len_remote = -1
         if handle is not None:
             try:
-                len_local, len_remote = await handle()
+                len_local, len_remote, error = await handle()
             except asyncio.IncompleteReadError:
                 pass
             except:
-                await self.reply(self.code_rejected)
                 raise
         else:
             await self.reply(self.code_not_supported)

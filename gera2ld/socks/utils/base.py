@@ -23,15 +23,15 @@ class Counter:
 async def forward_pipes(reader, writer, remote_reader, remote_writer):
     local_counter = Counter()
     remote_counter = Counter()
-    _done, pending = await asyncio.wait(
-        [
-            forward_data(reader, remote_writer, local_counter.count),
-            forward_data(remote_reader, writer, remote_counter.count),
-        ],
+    task_local = asyncio.create_task(forward_data(reader, remote_writer, local_counter.count))
+    task_remote = asyncio.create_task(forward_data(remote_reader, writer, remote_counter.count))
+    done, pending = await asyncio.wait(
+        [task_local, task_remote],
         return_when=asyncio.FIRST_COMPLETED,
     )
     for task in pending:
         task.cancel()
     writer.close()
     remote_writer.close()
-    return local_counter.value, remote_counter.value
+    exc = task_remote.exception() if task_remote in done else None
+    return local_counter.value, remote_counter.value, exc
