@@ -1,7 +1,7 @@
 import asyncio
 import os
 import socket
-from async_dns import TCP, types
+from async_dns import types
 from async_dns.resolver import ProxyResolver
 
 resolver = None
