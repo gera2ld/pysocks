@@ -19,17 +19,19 @@ def is_ip(host):
         return False
     return True
 
-async def get_host(host, qtypes=(types.A,)):
+async def get_host(host, qtypes=(types.A, types.AAAA)):
     if is_ip(host):
         return host
     if resolver is None:
         set_resolver()
-    done, _pending = await asyncio.wait([resolver.query(host, qtype) for qtype in qtypes], return_when=asyncio.FIRST_COMPLETED)
-    ip = None
-    res = done.pop().result()
-    for item in res.an:
-        if item.qtype in (types.A, types.AAAA):
-            ip = item.data
-            break
-    assert ip, 'DNS lookup failed'
-    return ip
+    for qtype in qtypes:
+        try:
+            res = await resolver.query(host, qtype)
+        except asyncio.streams.IncompleteReadError:
+            pass
+        else:
+            for item in res.an:
+                if item.qtype in (types.A, types.AAAA):
+                    ip = item.data
+                    if ip: return ip
+    raise Exception(f'DNS lookup failed: {host}')
