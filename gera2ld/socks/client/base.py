@@ -35,8 +35,6 @@ class BaseClient:
     async def handle_connect(self, addr):
         try:
             await self._connect()
-            self.writer.write(struct.pack('B', self.version))
-            await self.writer.drain()
             await self.shake_hand(1, addr)
             await self.load_reply()
         except:

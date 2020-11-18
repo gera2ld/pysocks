@@ -17,7 +17,7 @@ class SOCKS5Client(SOCKS5MixIn, BaseClient):
             self.methods.append(2)
 
     async def shake_hand(self, command, addr):
-        self.writer.write(bytes([len(self.methods), *self.methods]))
+        self.writer.write(bytes([self.version, len(self.methods), *self.methods]))
         await self.writer.drain()
         version, method = struct.unpack('BB', await self.reader.readexactly(2))
         assert version == 5, 'Version unmatched'

@@ -13,6 +13,7 @@ class SOCKS4Client(SOCKS4MixIn, BaseClient):
         self.userid = userid.strip('\0')
 
     async def shake_hand(self, command, addr):
+        self.writer.write(struct.pack('B', self.version))
         hostname = addr[0]
         # SOCKS4a
         remote_dns = self.remote_dns
