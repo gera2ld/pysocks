@@ -27,7 +27,7 @@ async def get_host(host, qtypes=(types.A, types.AAAA)):
     for qtype in qtypes:
         try:
             res = await resolver.query(host, qtype)
-        except asyncio.streams.IncompleteReadError:
+        except asyncio.IncompleteReadError:
             pass
         else:
             for item in res.an:
