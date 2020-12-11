@@ -1,7 +1,7 @@
 import asyncio
 import os
 import socket
-from async_dns import types
+from async_dns import types, get_nameservers
 from async_dns.resolver import ProxyResolver
 
 resolver = None
@@ -9,7 +9,7 @@ resolver = None
 def set_resolver(_resolver=None):
     global resolver
     resolver = _resolver or ProxyResolver(proxies=[
-        (None, os.environ.get('GERA2LD_SOCKS_NAMESERVER', '114.114.114.114').split(',')),
+        (None, get_nameservers()),
     ])
 
 def is_ip(host):
