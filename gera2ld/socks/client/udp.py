@@ -1,16 +1,18 @@
 import asyncio
-import socket
 import struct
-from ..utils import parse_udp_data, SOCKS5MixIn
 
-class UDPClient(SOCKS5MixIn):
+from ..utils import SOCKS5MixIn, parse_udp_data
+
+
+class UDPClient(SOCKS5MixIn, asyncio.DatagramProtocol):
     def __init__(self, addr):
         self.addr = addr
         self.results = asyncio.Queue()
 
     async def initialize(self):
         loop = asyncio.get_event_loop()
-        await loop.create_datagram_endpoint(lambda : self, remote_addr=self.addr)
+        await loop.create_datagram_endpoint(lambda: self,
+                                            remote_addr=self.addr)
 
     def connection_made(self, transport):
         self.transport = transport

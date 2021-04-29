@@ -1,8 +1,10 @@
-from .logger import logger
+from typing import Union
+
 from ..utils import SOCKSProxy
 
+
 def check_hostnames(rules):
-    def check(host, port, hostname):
+    def check(ip_or_host, port, hostname):
         for rule in rules:
             if rule.startswith('*.'):
                 if hostname == rule[2:] or hostname.endswith(rule[1:]):
@@ -11,7 +13,9 @@ def check_hostnames(rules):
                 if hostname == rule:
                     return True
         return False
+
     return check
+
 
 class Config:
     def __init__(self, bind='127.0.0.1:1080', remote_dns=True):
@@ -22,14 +26,14 @@ class Config:
         self.set_proxies()
         self.remote_dns = remote_dns
 
-    def set_user(self, user, pwd=None):
+    def set_user(self, user: Union[str, bytes], pwd: Union[str, bytes] = None):
         if isinstance(user, str): user = user.encode()
         if isinstance(pwd, str): pwd = pwd.encode()
         if pwd is None:
             self.users.pop(user, None)
         else:
             self.users[user] = pwd
-        self.socks5methods = (2,) if self.users else (0,)
+        self.socks5methods = (2, ) if self.users else (0, )
 
     def authenticate(self, user, pwd):
         return self.users.get(user) == pwd
@@ -46,7 +50,7 @@ class Config:
             normalized.append((test, proxy))
         self.proxies = normalized
 
-    def get_proxy(self, host, port, hostname):
+    def get_proxy(self, ip_or_host: str, port: int, hostname: str):
         for test, proxy in self.proxies:
-            if test is None or test(host, port, hostname):
+            if test is None or test(ip_or_host, port, hostname):
                 return proxy

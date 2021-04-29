@@ -1,6 +1,9 @@
 import socket
 import struct
+from typing import Tuple
+
 from .base import EMPTY_ADDR
+
 
 class SOCKS5MixIn:
     version = 5
@@ -9,13 +12,15 @@ class SOCKS5MixIn:
     code_rejected = 5
     code_not_supported = 7
 
-    def pack_address(self, address = None):
+    @staticmethod
+    def pack_address(address: Tuple[str, int] = None):
         if address is None:
             address = EMPTY_ADDR
-        host, port = address[:2]
+        host, port = address
         # IPv6
         if ':' in host:
-            return struct.pack('!B16sH', 4, socket.inet_pton(socket.AF_INET6, host), port)
+            return struct.pack('!B16sH', 4,
+                               socket.inet_pton(socket.AF_INET6, host), port)
         # IPv4
         try:
             # IP address
@@ -23,4 +28,5 @@ class SOCKS5MixIn:
         except:
             # Hostname
             host = host.encode()
-            return struct.pack('!BB', 3, len(host)) + host + struct.pack('!H', port)
+            return struct.pack('!BB', 3, len(host)) + host + struct.pack(
+                '!H', port)

@@ -1,13 +1,17 @@
-import struct, socket
-from ..utils import SOCKS5MixIn, get_host, EMPTY_ADDR
+import socket
+import struct
+from typing import Tuple
+
+from ..utils import EMPTY_ADDR, SOCKS5MixIn, SOCKSError, get_host
 from .base import BaseClient
 from .udp import UDPClient
+
 
 class SOCKS5Client(SOCKS5MixIn, BaseClient):
     '''
     SOCKS5 client
     '''
-    def __init__(self, addr, auth=None, remote_dns=False):
+    def __init__(self, addr, auth: Tuple[str, str] = None, remote_dns=False):
         super().__init__(addr, remote_dns)
         self.auth = auth
         self.methods = [0]
@@ -17,12 +21,15 @@ class SOCKS5Client(SOCKS5MixIn, BaseClient):
             self.methods.append(2)
 
     async def shake_hand(self, command, addr):
-        self.writer.write(bytes([self.version, len(self.methods), *self.methods]))
+        self.writer.write(
+            bytes([self.version,
+                   len(self.methods), *self.methods]))
         await self.writer.drain()
         version, method = struct.unpack('BB', await self.reader.readexactly(2))
         assert version == 5, 'Version unmatched'
         assert method < 255, 'Method unsupported'
         if method == 2:
+            assert self.auth is not None
             user, pwd = self.auth
             buser = user.encode()
             bpwd = pwd.encode()
@@ -33,7 +40,8 @@ class SOCKS5Client(SOCKS5MixIn, BaseClient):
             assert ret == 0, 'Authentication failed'
         if not self.remote_dns:
             addr = (await get_host(addr[0])), addr[1]
-        data = struct.pack('BBB', self.version, command, 0) + self.pack_address(addr)
+        data = struct.pack('BBB', self.version, command,
+                           0) + self.pack_address(addr)
         self.writer.write(data)
         await self.writer.drain()
 
@@ -48,12 +56,15 @@ class SOCKS5Client(SOCKS5MixIn, BaseClient):
             host = await self.reader.readexactly(l)
         elif addr_type == 4:
             # IPv6
-            host = socket.inet_ntop(socket.AF_INET6, await self.reader.readexactly(16))
+            host = socket.inet_ntop(socket.AF_INET6, await
+                                    self.reader.readexactly(16))
+        else:
+            raise SOCKSError(f'Unsupported address type: {addr_type}')
         port, = struct.unpack('!H', await self.reader.readexactly(2))
         return host, port
 
     async def handle_udp(self):
-        await self._connect()
+        await self.connect()
         await self.shake_hand(3, EMPTY_ADDR)
         await self.load_reply()
         client = UDPClient(self.proxy_addr)

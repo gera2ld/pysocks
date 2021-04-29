@@ -1,14 +1,15 @@
-#!/usr/bin/env python
-# coding=utf-8
-import unittest, asyncio, io
-from gera2ld.socks.server import SOCKSServer, SOCKS4Handler, SOCKS5Handler
+import asyncio
+import io
+import unittest
+
+from gera2ld.socks.server import SOCKS4Handler, SOCKS5Handler, SOCKSServer
 from gera2ld.socks.server.config import Config
-from gera2ld.socks.server.base import BaseHandler
 
 SOCKS4Connect = b'\4\1\0P\1\2\3\4\0'
 SOCKS5Connect = b'\5\1\0\5\1\0\1\1\2\3\4\0P'
 BootstrapAddr = '1.2.3.4', 80
 TESTDATA = b'Hello world'
+
 
 class FakeWriter(io.BytesIO):
     SockAddr = '4.5.6.7', 8888
@@ -23,6 +24,7 @@ class FakeWriter(io.BytesIO):
     def close(self):
         pass
 
+
 def wrap_class(cls, callback):
     class WrappedHandler(cls):
         def __init__(self, *k, **kw):
@@ -31,10 +33,11 @@ def wrap_class(cls, callback):
 
         def get_class(self):
             return cls
+
     return WrappedHandler
 
-class TestBootstrap(unittest.TestCase):
 
+class TestBootstrap(unittest.TestCase):
     def setUp(self):
         self.server = SOCKSServer(Config())
         self.server.config.versions.update((4, 5))
@@ -78,7 +81,8 @@ class TestBootstrap(unittest.TestCase):
         loop.run_until_complete(self.server.handle(reader, writer))
         self.assertEqual(self.handler.get_class(), SOCKS5Handler)
         self.assertEqual(self.handler.addr, BootstrapAddr)
-        self.assertEqual(writer.getvalue(), b'\x05\x00\x05\x00\x00\x01\x04\x05\x06\x07"\xb8')
+        self.assertEqual(writer.getvalue(),
+                         b'\x05\x00\x05\x00\x00\x01\x04\x05\x06\x07"\xb8')
 
     def test_socks5auth(self):
         self.server.config.set_user('hello', 'world')
@@ -91,23 +95,25 @@ class TestBootstrap(unittest.TestCase):
         self.assertEqual(self.handler.addr, ('-', 0))
         self.assertEqual(
             writer.getvalue(),
-            b'\5'           # version
-            b'\xff'         # no supported method
-            b'\5'           # reply
-            b'\7'           # not supported
-            b'\0\1'         # ipv4
-            b'\0\0\0\0'     # host
-            b'\0\0'         # port
+            b'\5'  # version
+            b'\xff'  # no supported method
+            b'\5'  # reply
+            b'\7'  # not supported
+            b'\0\1'  # ipv4
+            b'\0\0\0\0'  # host
+            b'\0\0'  # port
         )
         reader = asyncio.StreamReader()
         reader.feed_data(b'\5\1\2\1\5hello\5world\5\1\0\1\1\2\3\4\0P')
         reader.feed_eof()
         writer = FakeWriter()
         loop.run_until_complete(self.server.handle(reader, writer))
-        self.assertEqual(writer.getvalue(), b'\x05\x02\x01\x00\x05\x00\x00\x01\x04\x05\x06\x07"\xb8')
+        self.assertEqual(
+            writer.getvalue(),
+            b'\x05\x02\x01\x00\x05\x00\x00\x01\x04\x05\x06\x07"\xb8')
+
 
 class TestConnect(unittest.TestCase):
-
     def setUp(self):
         self.server = SOCKSServer(Config())
         self.server.config.versions.update((4, 5))

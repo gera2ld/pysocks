@@ -1,18 +1,20 @@
-import asyncio
 import socket
 import struct
+from typing import Tuple
+
 from ..utils import SOCKS4MixIn, get_host
 from .base import BaseClient
+
 
 class SOCKS4Client(SOCKS4MixIn, BaseClient):
     '''
     SOCKS4 client
     '''
-    def __init__(self, addr, userid='', remote_dns=False):
+    def __init__(self, addr: Tuple[str, int], userid='', remote_dns=False):
         super().__init__(addr, remote_dns)
         self.userid = userid.strip('\0')
 
-    async def shake_hand(self, command, addr):
+    async def shake_hand(self, command: int, addr: Tuple[str, int]):
         self.writer.write(struct.pack('B', self.version))
         hostname = addr[0]
         # SOCKS4a
@@ -25,7 +27,9 @@ class SOCKS4Client(SOCKS4MixIn, BaseClient):
                 addr = '0.0.0.1', addr[1]
             else:
                 addr = (await get_host(addr[0])), addr[1]
-        data = struct.pack('B', command) + self.pack_address(addr) + self.userid.encode() + b'\0'
+        data = struct.pack(
+            'B',
+            command) + self.pack_address(addr) + self.userid.encode() + b'\0'
         if remote_dns:
             data += hostname.encode() + b'\0'
         self.writer.write(data)
