@@ -1,10 +1,11 @@
 import asyncio
-import os
 import socket
-from async_dns import types, get_nameservers
+
+from async_dns.core import get_nameservers, types
 from async_dns.resolver import ProxyResolver
 
 resolver = None
+
 
 def set_resolver(_resolver=None):
     global resolver
@@ -12,12 +13,15 @@ def set_resolver(_resolver=None):
         (None, get_nameservers()),
     ])
 
+
 def is_ip(host):
     try:
-        socket.inet_pton(socket.AF_INET6 if ':' in host else socket.AF_INET, host)
+        socket.inet_pton(socket.AF_INET6 if ':' in host else socket.AF_INET,
+                         host)
     except OSError:
         return False
     return True
+
 
 async def get_host(host, qtypes=(types.A, types.AAAA)):
     if is_ip(host):
@@ -26,7 +30,7 @@ async def get_host(host, qtypes=(types.A, types.AAAA)):
         set_resolver()
     for qtype in qtypes:
         try:
-            res = await resolver.query(host, qtype)
+            res, _ = await resolver.query(host, qtype)
         except asyncio.IncompleteReadError:
             pass
         else:
