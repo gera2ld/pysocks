@@ -1,9 +1,10 @@
-import io
 import socket
 import struct
+
 from ..utils import SOCKS4MixIn
 from .base import BaseHandler
 from .logger import logger
+
 
 class SOCKS4Handler(SOCKS4MixIn, BaseHandler):
     '''
@@ -21,7 +22,8 @@ class SOCKS4Handler(SOCKS4MixIn, BaseHandler):
         await self.writer.drain()
 
     async def shake_hand(self):
-        command, port = struct.unpack('!BH', (await self.reader.readexactly(3)))
+        command, port = struct.unpack('!BH',
+                                      (await self.reader.readexactly(3)))
         ip = await self.reader.readexactly(4)
         ipn, = struct.unpack('!I', ip)
         # SOCKS4a supports domain names by given IP 0.0.0.x (x > 0)

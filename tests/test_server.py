@@ -11,8 +11,14 @@ BootstrapAddr = '1.2.3.4', 80
 TESTDATA = b'Hello world'
 
 
-class FakeWriter(io.BytesIO):
+class FakeWriter(asyncio.StreamWriter):
     SockAddr = '4.5.6.7', 8888
+
+    def __init__(self):
+        self.buffer = io.BytesIO()
+
+    def write(self, data):
+        self.buffer.write(data)
 
     async def drain(self):
         pass
@@ -23,6 +29,9 @@ class FakeWriter(io.BytesIO):
 
     def close(self):
         pass
+
+    def getvalue(self):
+        return self.buffer.getvalue()
 
 
 def wrap_class(cls, callback):

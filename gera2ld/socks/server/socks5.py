@@ -1,9 +1,10 @@
-import asyncio
 import socket
 import struct
+
 from ..utils import SOCKS5MixIn, forward_data
 from .base import BaseHandler, SOCKSError
 from .logger import logger
+
 
 class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
     '''
@@ -22,7 +23,8 @@ class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
 
     async def shake_hand(self):
         length, = struct.unpack('B', (await self.reader.readexactly(1)))
-        for method in struct.unpack('B' * length, (await self.reader.readexactly(length))):
+        for method in struct.unpack('B' * length,
+                                    (await self.reader.readexactly(length))):
             if method in self.config.socks5methods:
                 self.method = method
                 break
@@ -34,7 +36,7 @@ class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
             raise SOCKSError('No supported method')
         if method == 2:
             # Authentication needed
-            res, = await self.reader.readexactly(1) # must be 0x01
+            res, = await self.reader.readexactly(1)  # must be 0x01
             length, = struct.unpack('B', (await self.reader.readexactly(1)))
             user = await self.reader.readexactly(length)
             length, = struct.unpack('B', (await self.reader.readexactly(1)))
@@ -44,7 +46,8 @@ class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
             await self.writer.drain()
             if code > 0:
                 raise SOCKSError('Invalid user or password')
-        version, command, _, addr_type = struct.unpack('BBBB', (await self.reader.readexactly(4)))
+        version, command, _, addr_type = struct.unpack(
+            'BBBB', (await self.reader.readexactly(4)))
         assert version == 5, 'Invalid SOCKS version'
         if addr_type == 1:
             # IPv4
@@ -55,7 +58,8 @@ class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
             host = (await self.reader.readexactly(length)).decode()
         elif addr_type == 4:
             # IPv6
-            host = socket.inet_ntop(socket.AF_INET6, (await self.reader.readexactly(16)))
+            host = socket.inet_ntop(socket.AF_INET6,
+                                    (await self.reader.readexactly(16)))
         else:
             raise SOCKSError(f'Invalid addr_type: {addr_type}')
         port, = struct.unpack('!H', (await self.reader.readexactly(2)))
@@ -64,7 +68,9 @@ class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
         return command
 
     async def socks_udp(self):
-        local_peer, remote_peer = await self.udp_server.add_client(self.client_addr[0])
+        assert self.udp_server is not None
+        local_peer, remote_peer = await self.udp_server.add_client(
+            self.client_addr[0])
         self.addr = local_peer.local_addr
         await self.reply(self.code_granted, local_peer.local_addr)
         await forward_data(self.reader)

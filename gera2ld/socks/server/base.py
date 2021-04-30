@@ -1,7 +1,10 @@
 import asyncio
+from typing import Union
 
 from ..client import create_client
 from ..utils import EMPTY_ADDR, SOCKSError, forward_pipes, get_host
+from .config import Config
+from .udp import UDPRelayServer
 
 
 class BaseHandler:
@@ -15,7 +18,9 @@ class BaseHandler:
     code_not_supported = NotImplemented
     commands = {}
 
-    def __init__(self, reader, writer, config, udp_server):
+    def __init__(self, reader: asyncio.StreamReader,
+                 writer: asyncio.StreamWriter, config: Config,
+                 udp_server: Union[UDPRelayServer, None]):
         self.reader = reader
         self.writer = writer
         self.config = config

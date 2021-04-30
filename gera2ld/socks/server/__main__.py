@@ -1,10 +1,12 @@
 import argparse
 import logging
 import os
+
 from gera2ld.pyserve import run_forever
+
 from . import SOCKSServer
-from .logger import logger
 from .config import Config, check_hostnames
+from .logger import logger
 
 logger.setLevel(os.environ.get('LOGLEVEL') or logging.INFO)
 ch = logging.StreamHandler()
@@ -13,11 +15,20 @@ fmt = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
 ch.setFormatter(fmt)
 logger.addHandler(ch)
 
-parser = argparse.ArgumentParser(description = 'HTTP server by Gerald.')
-parser.add_argument('-b', '--bind', default='127.0.0.1:1080', help='the bind address of SOCKS server')
-parser.add_argument('-a', '--auth', nargs=2, action='append', help='username and password pairs')
+parser = argparse.ArgumentParser(description='HTTP server by Gerald.')
+parser.add_argument('-b',
+                    '--bind',
+                    default='127.0.0.1:1080',
+                    help='the bind address of SOCKS server')
+parser.add_argument('-a',
+                    '--auth',
+                    nargs=2,
+                    action='append',
+                    help='username and password pairs')
 parser.add_argument('-x', '--proxy', help='set downstream proxy')
-parser.add_argument('--remote-dns', action='store_true', help='resolve DNS at remote server')
+parser.add_argument('--remote-dns',
+                    action='store_true',
+                    help='resolve DNS at remote server')
 parser.add_argument('--versions', nargs='+', help='allowed versions, e.g 4 5')
 
 args = parser.parse_args()

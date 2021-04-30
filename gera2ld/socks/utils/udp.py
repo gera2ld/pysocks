@@ -1,9 +1,11 @@
 import io
 import socket
 import struct
+
 from .error import SOCKSError
 
 __all__ = ['parse_udp_data']
+
 
 def parse_udp_data(data):
     stream = io.BytesIO(data)
