@@ -38,6 +38,6 @@ async def get_host(
         else:
             for item in res.an:
                 if item.qtype in (types.A, types.AAAA):
-                    ip: str = item.data
-                    if ip: return ip
+                    ip = item.data
+                    if ip: return ip.data
     raise Exception(f'DNS lookup failed: {host}')

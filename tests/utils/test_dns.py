@@ -18,7 +18,7 @@ class TestUtils(unittest.TestCase):
     @async_test
     async def test_get_host(self):
         resolver = ProxyResolver()
-        resolver.cache.add('www.fake.com', types.A, '2.2.2.2')
+        resolver.cache.add('www.fake.com', types.A, ['2.2.2.2'])
         set_resolver(resolver)
         self.assertEqual(dns.resolver, resolver)
 
