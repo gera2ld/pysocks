@@ -3,9 +3,8 @@ from typing import Dict, Type
 
 from gera2ld.pyserve import Host, start_server_asyncio
 
-from .base import BaseHandler
+from .base import BaseHandler, logger
 from .config import Config
-from .logger import logger
 from .socks4 import SOCKS4Handler
 from .socks5 import SOCKS5Handler
 from .udp import UDPRelayServer

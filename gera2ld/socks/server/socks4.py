@@ -2,8 +2,7 @@ import socket
 import struct
 
 from ..utils import SOCKS4MixIn
-from .base import BaseHandler
-from .logger import logger
+from .base import BaseHandler, logger
 
 
 class SOCKS4Handler(SOCKS4MixIn, BaseHandler):

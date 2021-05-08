@@ -2,8 +2,7 @@ import socket
 import struct
 
 from ..utils import SOCKS5MixIn, forward_data
-from .base import BaseHandler, SOCKSError
-from .logger import logger
+from .base import BaseHandler, SOCKSError, logger
 
 
 class SOCKS5Handler(SOCKS5MixIn, BaseHandler):

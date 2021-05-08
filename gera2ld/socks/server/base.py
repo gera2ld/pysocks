@@ -1,10 +1,13 @@
 import asyncio
+import logging
 from typing import Union
 
 from ..client import create_client
 from ..utils import EMPTY_ADDR, SOCKSError, forward_pipes, get_host
 from .config import Config
 from .udp import UDPRelayServer
+
+logger = logging.getLogger(__package__)
 
 
 class BaseHandler:

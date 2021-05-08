@@ -4,9 +4,8 @@ import os
 
 from gera2ld.pyserve import run_forever
 
-from . import SOCKSServer
+from . import SOCKSServer, logger
 from .config import Config, check_hostnames
-from .logger import logger
 
 logger.setLevel(os.environ.get('LOGLEVEL') or logging.INFO)
 ch = logging.StreamHandler()
