@@ -4,7 +4,7 @@ import io
 import unittest
 
 from gera2ld.socks.client import SOCKS4Client, SOCKS5Client, create_client
-from gera2ld.socks.utils import Counter, forward_data
+from gera2ld.socks.utils import forward_data
 
 PROXY_ADDR = '1.2.3.4', 1080
 SERVER_ADDR = '4.5.6.7', 80
@@ -33,8 +33,7 @@ class TestConnect(unittest.TestCase):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(client.handle_connect(SERVER_ADDR))
         output = FakeWriter()
-        counter = Counter()
-        loop.run_until_complete(forward_data(reader, output, counter.count))
+        loop.run_until_complete(forward_data(reader, output))
         self.assertEqual(writer.getvalue(), b'\4\1\0P\4\5\6\7\0')
         self.assertEqual(client.proxy_addr, ('1.2.3.4', 8888))
         self.assertEqual(client.addr, PROXY_ADDR)
@@ -53,8 +52,7 @@ class TestConnect(unittest.TestCase):
         loop = asyncio.get_event_loop()
         loop.run_until_complete(client.handle_connect(SERVER_ADDR))
         output = FakeWriter()
-        counter = Counter()
-        loop.run_until_complete(forward_data(reader, output, counter.count))
+        loop.run_until_complete(forward_data(reader, output))
         self.assertEqual(writer.getvalue(), b'\5\1\0\5\1\0\1\4\5\6\7\0P')
         self.assertEqual(client.proxy_addr, ('1.2.3.4', 8888))
         self.assertEqual(client.addr, PROXY_ADDR)

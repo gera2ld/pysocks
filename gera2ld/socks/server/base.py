@@ -3,7 +3,7 @@ import logging
 from typing import Union
 
 from ..client import create_client
-from ..utils import EMPTY_ADDR, SOCKSError, forward_pipes, get_host
+from ..utils import Connection, EMPTY_ADDR, SOCKSError, get_host
 from .config import Config
 from .udp import UDPRelayServer
 
@@ -31,6 +31,7 @@ class BaseHandler:
         self.client_addr = writer.get_extra_info('peername')[:2]
         self.server_addr = writer.get_extra_info('sockname')[:2]
         self.addr = '-', 0
+        self.command = None
 
     async def shake_hand(self):
         raise NotImplementedError
@@ -76,8 +77,20 @@ class BaseHandler:
         else:
             await self.reply(self.code_granted,
                              remote_writer.get_extra_info('sockname'))
-            len_local, len_remote, exc = await forward_pipes(
-                self.reader, self.writer, remote_reader, remote_writer)
+            forwarder = Connection(self.reader,
+                                   self.writer,
+                                   remote_reader,
+                                   remote_writer,
+                                   meta={
+                                       'command': self.command,
+                                       'addr': self.addr
+                                   })
+            try:
+                await forwarder.forward()
+                exc = None
+            except Exception as e:
+                exc = e
+            len_local, len_remote = forwarder.local_len, forwarder.remote_len
         return len_local, len_remote, exc
 
     async def get_bind_connection(self, timeout=3):
@@ -112,21 +125,32 @@ class BaseHandler:
             dest_addr = remote_writer.get_extra_info('peername')
             if dest_addr[0] == self.addr[0]:
                 await self.reply(self.code_granted, dest_addr)
-                len_local, len_remote, exc = await forward_pipes(
-                    self.reader, self.writer, remote_reader, remote_writer)
+                forwarder = Connection(self.reader,
+                                       self.writer,
+                                       remote_reader,
+                                       remote_writer,
+                                       meta={
+                                           'command': self.command,
+                                           'addr': self.addr
+                                       })
+                try:
+                    await forwarder.forward()
+                    exc = None
+                except Exception as e:
+                    exc = e
+                len_local, len_remote = forwarder.local_len, forwarder.remote_len
             else:
                 await self.reply(self.code_rejected, dest_addr)
         return len_local, len_remote, exc
 
     async def handle(self):
-        command = None
         try:
-            command = await self.shake_hand()
+            self.command = await self.shake_hand()
         except SOCKSError as e:
             error = e.message
         else:
             error = None
-        name = self.commands.get(command)
+        name = self.commands.get(self.command)
         handle = None
         if name and error is None:
             handle = getattr(self, 'socks_' + name, None)
