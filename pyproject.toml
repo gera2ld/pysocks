@@ -13,7 +13,7 @@ packages = [
 [tool.poetry.dependencies]
 python = "^3.7"
 gera2ld-pyserve = "^0.3.0"
-async_dns = "^2.0.0-alpha.2"
+async_dns = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 jedi = "^0.17.2"
