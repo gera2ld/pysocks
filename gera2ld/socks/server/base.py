@@ -75,8 +75,8 @@ class BaseHandler:
             len_local = len_remote = -1
             exc = e
         else:
-            await self.reply(self.code_granted,
-                             remote_writer.get_extra_info('sockname'))
+            remote_addr = remote_writer.get_extra_info('sockname')[:2]
+            await self.reply(self.code_granted, remote_addr)
             forwarder = Connection(self.reader,
                                    self.writer,
                                    remote_reader,
