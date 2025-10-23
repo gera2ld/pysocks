@@ -72,7 +72,7 @@ class SOCKS5Handler(SOCKS5MixIn, BaseHandler):
             self.client_addr[0])
         self.addr = local_peer.local_addr
         await self.reply(self.code_granted, local_peer.local_addr)
-        await forward_data(self.reader)
+        await forward_data(self.reader, self.writer)
         local_peer.close()
         remote_peer.close()
         return local_peer.len, remote_peer.len, None
